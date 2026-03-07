@@ -6,5 +6,9 @@
 
 body {
   margin: 0;
-  background: #f3f4f6;
+  background:
+    radial-gradient(circle at 15% 10%, rgba(120, 14, 22, 0.35), transparent 38%),
+    radial-gradient(circle at 85% 80%, rgba(80, 10, 16, 0.28), transparent 40%),
+    linear-gradient(180deg, #090909 0%, #040404 100%);
+  color: #f5f5f5;
 }
