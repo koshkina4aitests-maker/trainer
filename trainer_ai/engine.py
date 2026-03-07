@@ -129,6 +129,7 @@ class TrainingAIEngine:
         return 1.0
 
     def _apply_recovery_to_state(self, now: datetime) -> None:
+        now = self._normalize_datetime(now)
         for state in self.fatigue_state.values():
             if state.last_updated is None:
                 state.last_updated = now
@@ -145,7 +146,9 @@ class TrainingAIEngine:
         return min(55.0, base_gain * rir_multiplier)
 
     def ingest_workout(self, workout: WorkoutSession) -> WorkoutLoad:
-        self._apply_recovery_to_state(workout.performed_at)
+        performed_at = self._normalize_datetime(workout.performed_at)
+        workout.performed_at = performed_at
+        self._apply_recovery_to_state(performed_at)
         per_muscle_load = self.calculate_workout_load(workout)
 
         for exercise in workout.exercises:
@@ -158,16 +161,22 @@ class TrainingAIEngine:
                 load = exercise.weight * total_reps * coefficient
                 state = self.fatigue_state[muscle]
                 state.score = min(100.0, state.score + self._fatigue_gain(load, avg_rir))
-                state.last_updated = workout.performed_at
+                state.last_updated = performed_at
 
         self.workout_history.append(workout)
         self.workout_history.sort(key=lambda item: item.performed_at)
         return per_muscle_load
 
     def get_fatigue_snapshot(self, at_time: Optional[datetime] = None) -> Dict[str, float]:
-        now = at_time or datetime.now(UTC)
+        now = self._normalize_datetime(at_time or datetime.now(UTC))
         self._apply_recovery_to_state(now)
         return {muscle: round(state.score, 2) for muscle, state in self.fatigue_state.items()}
+
+    @staticmethod
+    def _normalize_datetime(value: datetime) -> datetime:
+        if value.tzinfo is None:
+            return value.replace(tzinfo=UTC)
+        return value.astimezone(UTC)
 
     def _muscle_priority_scores(self) -> Dict[str, float]:
         fatigue = self.get_fatigue_snapshot()
