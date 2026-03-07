@@ -11,6 +11,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
 const EXERCISE_LIBRARY = {
   bench: {
     name: "Жим штанги лёжа",
+    defaultWeight: 20,
+    defaultReps: 10,
+    defaultRir: 2,
     primary: ["Грудь"],
     secondary: ["Трицепс", "Плечи"],
     muscleCoefficients: {
@@ -21,6 +24,9 @@ const EXERCISE_LIBRARY = {
   },
   pullup: {
     name: "Подтягивания",
+    defaultWeight: 1,
+    defaultReps: 10,
+    defaultRir: 2,
     primary: ["Спина"],
     secondary: ["Бицепс", "Плечи"],
     muscleCoefficients: {
@@ -41,20 +47,25 @@ function createSet(weight = 20, reps = 10, rir = 2, completed = false) {
   };
 }
 
+function createExercise(kind, targetSets = 2) {
+  const meta = EXERCISE_LIBRARY[kind];
+  return {
+    id: crypto.randomUUID(),
+    kind,
+    targetSets,
+    sets: Array.from({ length: targetSets }, () =>
+      createSet(meta.defaultWeight, meta.defaultReps, meta.defaultRir, false),
+    ),
+  };
+}
+
 function initialExercises() {
   return [
     {
-      id: crypto.randomUUID(),
-      kind: "bench",
-      targetSets: 2,
+      ...createExercise("bench", 2),
       sets: [createSet(20, 10, 2, true), createSet(20, 10, 2, true)],
     },
-    {
-      id: crypto.randomUUID(),
-      kind: "pullup",
-      targetSets: 2,
-      sets: [createSet(1, 10, 2, false), createSet(1, 10, 2, false)],
-    },
+    createExercise("pullup", 2),
   ];
 }
 
@@ -63,15 +74,15 @@ function setLoad(setItem) {
 }
 
 function loadColorClass(ratio) {
-  if (ratio < 0.55) return "bg-red-400";
-  if (ratio < 0.8) return "bg-red-500";
-  return "bg-red-700";
+  if (ratio < 0.55) return "bg-emerald-500";
+  if (ratio < 0.8) return "bg-amber-500";
+  return "bg-red-500";
 }
 
 function dotColorClass(ratio) {
-  if (ratio < 0.55) return "bg-red-400";
-  if (ratio < 0.8) return "bg-red-500";
-  return "bg-red-700";
+  if (ratio < 0.55) return "bg-emerald-500";
+  if (ratio < 0.8) return "bg-amber-500";
+  return "bg-red-500";
 }
 
 function ExerciseCard({ exercise, canDelete, onToggleSet, onChangeSet, onAddSet, onDeleteExercise }) {
@@ -79,7 +90,7 @@ function ExerciseCard({ exercise, canDelete, onToggleSet, onChangeSet, onAddSet,
   const completedCount = exercise.sets.filter((setItem) => setItem.completed).length;
 
   return (
-    <Card className="rounded-2xl shadow-lg shadow-black/40">
+    <Card className="rounded-2xl shadow-sm">
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between gap-3">
           <div className="space-y-2">
@@ -94,13 +105,13 @@ function ExerciseCard({ exercise, canDelete, onToggleSet, onChangeSet, onAddSet,
             </div>
           </div>
           <div className="flex items-center gap-2 pt-1">
-            <span className="text-sm font-semibold text-zinc-300">
+            <span className="text-sm font-semibold text-slate-600">
               {completedCount}/{exercise.targetSets}
             </span>
             <Button
               size="icon"
               variant="ghost"
-              className="text-red-300 hover:bg-red-950/40 hover:text-red-200"
+              className="text-red-500 hover:bg-red-50 hover:text-red-600"
               onClick={onDeleteExercise}
               disabled={!canDelete}
             >
@@ -113,7 +124,7 @@ function ExerciseCard({ exercise, canDelete, onToggleSet, onChangeSet, onAddSet,
       <CardContent className="space-y-3">
         <Table>
           <TableHeader>
-            <TableRow className="border-zinc-800">
+            <TableRow className="border-slate-200">
               <TableHead>Статус</TableHead>
               <TableHead>Вес (кг)</TableHead>
               <TableHead>Повторы</TableHead>
@@ -125,18 +136,18 @@ function ExerciseCard({ exercise, canDelete, onToggleSet, onChangeSet, onAddSet,
             {exercise.sets.map((setItem, index) => (
               <TableRow
                 key={setItem.id}
-                className={setItem.completed ? "border-transparent bg-red-950/35" : "bg-zinc-900/40"}
+                className={setItem.completed ? "border-transparent bg-emerald-50/90" : "bg-slate-50/90"}
               >
                 <TableCell>
                   <button
                     type="button"
-                    className="flex items-center gap-2 text-zinc-200"
+                    className="flex items-center gap-2 text-slate-700"
                     onClick={() => onToggleSet(index)}
                   >
                     {setItem.completed ? (
-                      <Check className="h-4 w-4 text-red-400" />
+                      <Check className="h-4 w-4 text-emerald-600" />
                     ) : (
-                      <Circle className="h-4 w-4 text-zinc-500" />
+                      <Circle className="h-4 w-4 text-slate-400" />
                     )}
                     <span>Подход {index + 1}</span>
                   </button>
@@ -148,7 +159,7 @@ function ExerciseCard({ exercise, canDelete, onToggleSet, onChangeSet, onAddSet,
                     min="0"
                     value={setItem.weight}
                     onChange={(event) => onChangeSet(index, "weight", event.target.value)}
-                    className="h-9 rounded-lg border-zinc-700 bg-zinc-900 text-center font-semibold"
+                    className="h-9 rounded-lg border-slate-200 bg-white text-center font-semibold"
                   />
                 </TableCell>
 
@@ -158,7 +169,7 @@ function ExerciseCard({ exercise, canDelete, onToggleSet, onChangeSet, onAddSet,
                     min="0"
                     value={setItem.reps}
                     onChange={(event) => onChangeSet(index, "reps", event.target.value)}
-                    className="h-9 rounded-lg border-zinc-700 bg-zinc-900 text-center font-semibold"
+                    className="h-9 rounded-lg border-slate-200 bg-white text-center font-semibold"
                   />
                 </TableCell>
 
@@ -170,11 +181,11 @@ function ExerciseCard({ exercise, canDelete, onToggleSet, onChangeSet, onAddSet,
                     step="0.5"
                     value={setItem.rir}
                     onChange={(event) => onChangeSet(index, "rir", event.target.value)}
-                    className="h-9 rounded-lg border-zinc-700 bg-zinc-900 text-center font-semibold"
+                    className="h-9 rounded-lg border-slate-200 bg-white text-center font-semibold"
                   />
                 </TableCell>
 
-                <TableCell className="text-right text-lg font-bold text-red-300">
+                <TableCell className="text-right text-lg font-bold text-slate-600">
                   {setLoad(setItem)}
                 </TableCell>
               </TableRow>
@@ -184,7 +195,7 @@ function ExerciseCard({ exercise, canDelete, onToggleSet, onChangeSet, onAddSet,
 
         <Button
           variant="outline"
-          className="h-11 w-full rounded-xl border-zinc-700 bg-zinc-900 text-base font-semibold text-zinc-100"
+          className="h-11 w-full rounded-xl border-slate-300 bg-white text-base font-semibold text-slate-700"
           onClick={onAddSet}
         >
           <Plus className="h-4 w-4" />
@@ -213,6 +224,7 @@ function buildMuscleLoads(exercises) {
 
 export default function WorkoutDiaryPage() {
   const [exercises, setExercises] = useState(initialExercises);
+  const [exerciseToAdd, setExerciseToAdd] = useState("bench");
 
   const totals = useMemo(() => {
     const totalPlannedSets = exercises.reduce((acc, exercise) => acc + exercise.targetSets, 0);
@@ -286,20 +298,24 @@ export default function WorkoutDiaryPage() {
     setExercises((prev) => (prev.length > 1 ? prev.filter((exercise) => exercise.id !== exerciseId) : prev));
   }
 
+  function addExercise() {
+    setExercises((prev) => [...prev, createExercise(exerciseToAdd, 2)]);
+  }
+
   return (
-    <div className="min-h-screen bg-transparent p-3 md:p-6">
+    <div className="min-h-screen bg-slate-100 p-3 md:p-6">
       <div className="mx-auto max-w-7xl space-y-4">
-        <header className="flex items-start justify-between rounded-2xl border border-zinc-800 bg-zinc-950/90 px-5 py-4 shadow-lg shadow-black/40">
+        <header className="flex items-start justify-between rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
           <div className="flex items-start gap-3">
-            <div className="rounded-xl bg-red-950 p-2 text-red-300">
+            <div className="rounded-xl bg-blue-100 p-2 text-blue-600">
               <Dumbbell className="h-5 w-5" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-zinc-100">Умный дневник тренировок</h1>
-              <p className="text-sm text-zinc-400">Отслеживайте прогресс и нагрузку</p>
+              <h1 className="text-xl font-bold text-slate-900">Умный дневник тренировок</h1>
+              <p className="text-sm text-slate-500">Отслеживайте прогресс и нагрузку</p>
             </div>
           </div>
-          <div className="flex items-center gap-2 pt-1 text-sm font-medium text-zinc-400">
+          <div className="flex items-center gap-2 pt-1 text-sm font-medium text-slate-600">
             <CalendarDays className="h-4 w-4" />
             {new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "long", year: "numeric" }).format(new Date())}
           </div>
@@ -308,15 +324,15 @@ export default function WorkoutDiaryPage() {
         <section className="grid gap-4 md:grid-cols-3">
           <Card className="rounded-2xl">
             <CardContent className="p-5">
-              <p className="text-sm text-zinc-400">Упражнений</p>
-              <p className="mt-1 text-4xl font-bold leading-none text-red-300">{totals.exercisesCount}</p>
+              <p className="text-sm text-slate-500">Упражнений</p>
+              <p className="mt-1 text-4xl font-bold leading-none text-slate-900">{totals.exercisesCount}</p>
             </CardContent>
           </Card>
 
           <Card className="rounded-2xl">
             <CardContent className="p-5">
-              <p className="text-sm text-zinc-400">Подходов выполнено</p>
-              <p className="mt-1 text-4xl font-bold leading-none text-red-300">
+              <p className="text-sm text-slate-500">Подходов выполнено</p>
+              <p className="mt-1 text-4xl font-bold leading-none text-slate-900">
                 {totals.completedSets} / {totals.totalPlannedSets}
               </p>
             </CardContent>
@@ -325,13 +341,41 @@ export default function WorkoutDiaryPage() {
           <Card className="rounded-2xl">
             <CardContent className="p-5">
               <div className="mb-2 flex items-center justify-between">
-                <p className="text-sm text-zinc-400">Прогресс</p>
-                <span className="text-2xl font-bold text-red-300">{totals.progressPercent}%</span>
+                <p className="text-sm text-slate-500">Прогресс</p>
+                <span className="text-2xl font-bold text-slate-900">{totals.progressPercent}%</span>
               </div>
-              <Progress value={totals.progressPercent} className="h-3 bg-zinc-800" />
+              <Progress value={totals.progressPercent} className="h-3 bg-slate-200" />
             </CardContent>
           </Card>
         </section>
+
+        <Card className="rounded-2xl">
+          <CardContent className="flex flex-col gap-3 p-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <p className="text-sm text-slate-500">Управление тренировкой</p>
+              <p className="text-base font-semibold text-slate-900">Добавьте новое упражнение в текущую сессию</p>
+            </div>
+
+            <div className="flex w-full flex-col gap-2 md:w-auto md:flex-row md:items-center">
+              <select
+                value={exerciseToAdd}
+                onChange={(event) => setExerciseToAdd(event.target.value)}
+                className="h-10 min-w-[240px] rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-sm outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                {Object.entries(EXERCISE_LIBRARY).map(([key, item]) => (
+                  <option value={key} key={key}>
+                    {item.name}
+                  </option>
+                ))}
+              </select>
+
+              <Button className="h-10" onClick={addExercise}>
+                <Plus className="h-4 w-4" />
+                Добавить упражнение
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
         <section className="grid gap-4 lg:grid-cols-[1.85fr_1fr]">
           <div className="space-y-4">
@@ -350,7 +394,7 @@ export default function WorkoutDiaryPage() {
 
           <Card className="h-fit rounded-2xl">
             <CardHeader className="pb-3">
-              <CardTitle className="text-2xl text-zinc-100">Нагрузка на мышечные группы</CardTitle>
+              <CardTitle className="text-2xl text-slate-900">Нагрузка на мышечные группы</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {muscleLoads.map(([muscle, load]) => {
@@ -359,32 +403,32 @@ export default function WorkoutDiaryPage() {
                 return (
                   <div key={muscle} className="space-y-2">
                     <div className="flex items-center justify-between text-base">
-                      <span className="font-medium text-zinc-200">{muscle}</span>
-                      <div className="flex items-center gap-2 text-zinc-300">
+                      <span className="font-medium text-slate-700">{muscle}</span>
+                      <div className="flex items-center gap-2 text-slate-600">
                         <span className="font-semibold">{load}</span>
                         <span className={`h-2.5 w-2.5 rounded-full ${dotColorClass(ratio)}`} />
                       </div>
                     </div>
                     <Progress
                       value={width}
-                      className="h-2 bg-zinc-800"
+                      className="h-2 bg-slate-200"
                       indicatorClassName={loadColorClass(ratio)}
                     />
                   </div>
                 );
               })}
 
-              <div className="flex flex-wrap items-center gap-6 border-t border-zinc-800 pt-4 text-sm text-zinc-400">
+              <div className="flex flex-wrap items-center gap-6 border-t border-slate-200 pt-4 text-sm text-slate-500">
                 <span className="inline-flex items-center gap-2">
-                  <span className="h-2.5 w-2.5 rounded-full bg-red-400" />
+                  <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
                   Низкая
                 </span>
                 <span className="inline-flex items-center gap-2">
-                  <span className="h-2.5 w-2.5 rounded-full bg-red-500" />
+                  <span className="h-2.5 w-2.5 rounded-full bg-amber-500" />
                   Средняя
                 </span>
                 <span className="inline-flex items-center gap-2">
-                  <span className="h-2.5 w-2.5 rounded-full bg-red-700" />
+                  <span className="h-2.5 w-2.5 rounded-full bg-red-500" />
                   Высокая
                 </span>
               </div>
