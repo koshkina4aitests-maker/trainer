@@ -1,12 +1,7 @@
 import { useState } from "react";
 import { getAnalysis } from "../api";
-
-function colorClass(color) {
-  if (color === "green") return "muscle-green";
-  if (color === "yellow") return "muscle-yellow";
-  if (color === "orange") return "muscle-orange";
-  return "muscle-red";
-}
+import BodyTrafficVisualizer from "../components/BodyTrafficVisualizer";
+import { buildZonesFromFatiguePayload, translateExercise, translateMuscle } from "../utils/trainingModel";
 
 export default function BodyVisualizationPage({ userId }) {
   const [payload, setPayload] = useState(null);
@@ -14,7 +9,7 @@ export default function BodyVisualizationPage({ userId }) {
 
   async function load() {
     if (!userId) {
-      setError("Set user ID first.");
+      setError("Введите ID пользователя.");
       return;
     }
     setError("");
@@ -27,28 +22,36 @@ export default function BodyVisualizationPage({ userId }) {
   }
 
   return (
-    <section>
-      <h2>Body muscle visualization</h2>
-      <button onClick={load}>Load body map</button>
+    <section className="page-stack">
+      <div className="page-header">
+        <h2>Карта мышц</h2>
+        <p className="subtle">Отображение накопленной усталости мышц по данным последних тренировок.</p>
+      </div>
+      <button onClick={load}>Показать карту тела</button>
       {error && <p className="error">{error}</p>}
 
       {payload && (
-        <div className="muscle-grid">
-          {Object.entries(payload).map(([muscle, data]) => (
-            <details className={`muscle-card ${colorClass(data.color)}`} key={muscle}>
-              <summary>
-                {muscle} — fatigue {data.fatigue}
-              </summary>
-              <p>Color zone: {data.color}</p>
-              <p>Related exercises:</p>
-              <ul>
-                {data.related_exercises.map((exercise) => (
-                  <li key={exercise}>{exercise}</li>
-                ))}
-              </ul>
-            </details>
-          ))}
-        </div>
+        <>
+          <BodyTrafficVisualizer
+            zones={buildZonesFromFatiguePayload(payload)}
+            subtitle="Светофор усталости: зеленый — свежо, желтый — умеренно, красный — высокая усталость."
+          />
+          <div className="muscle-grid">
+            {Object.entries(payload).map(([muscle, data]) => (
+              <details className="muscle-card" key={muscle}>
+                <summary>
+                  {translateMuscle(muscle)} — усталость {Math.round(data.fatigue)}
+                </summary>
+                <p>Связанные упражнения:</p>
+                <ul>
+                  {data.related_exercises.map((exercise) => (
+                    <li key={exercise}>{translateExercise(exercise)}</li>
+                  ))}
+                </ul>
+              </details>
+            ))}
+          </div>
+        </>
       )}
     </section>
   );

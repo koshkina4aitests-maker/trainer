@@ -1,26 +1,12 @@
 import { useMemo, useState } from "react";
 import { createWorkout } from "../api";
-
-const EXERCISE_OPTIONS = [
-  "barbell bench press",
-  "dumbbell bench press",
-  "overhead press",
-  "pull-up",
-  "barbell row",
-  "lat pulldown",
-  "squat",
-  "front squat",
-  "romanian deadlift",
-  "deadlift",
-  "leg press",
-  "hip thrust",
-  "leg curl",
-  "biceps curl",
-  "triceps pushdown",
-  "lateral raise",
-  "face pull",
-  "calf raise"
-];
+import BodyTrafficVisualizer from "../components/BodyTrafficVisualizer";
+import {
+  EXERCISE_OPTIONS,
+  buildZonesFromMuscleLoad,
+  calculateSessionMuscleLoad,
+  translateMuscle,
+} from "../utils/trainingModel";
 
 function makeSet() {
   return {
@@ -31,7 +17,7 @@ function makeSet() {
 
 function makeExercise() {
   return {
-    exercise: EXERCISE_OPTIONS[0],
+    exercise: EXERCISE_OPTIONS[0].value,
     weight: 20,
     rest_time_sec: 90,
     rep_target_min: 8,
@@ -62,6 +48,15 @@ export default function WorkoutSessionPage({ userId }) {
       }))
     }),
     [performedAtLocal, exercises]
+  );
+  const muscleLoad = useMemo(() => calculateSessionMuscleLoad(exercises), [exercises]);
+  const zoneLoad = useMemo(() => buildZonesFromMuscleLoad(muscleLoad), [muscleLoad]);
+  const topMuscles = useMemo(
+    () =>
+      Object.entries(muscleLoad)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 6),
+    [muscleLoad]
   );
 
   function updateExerciseField(exerciseIndex, field, value) {
@@ -123,15 +118,15 @@ export default function WorkoutSessionPage({ userId }) {
 
   async function submitWorkout() {
     if (!userId) {
-      setError("Set user ID first.");
+      setError("Сначала укажите ID пользователя.");
       return;
     }
     if (!exercises.length) {
-      setError("Add at least one exercise.");
+      setError("Добавьте хотя бы одно упражнение.");
       return;
     }
     setError("");
-    setStatus("Sending workout...");
+    setStatus("Сохранение тренировки...");
     try {
       const payload = {
         ...preview,
@@ -139,7 +134,7 @@ export default function WorkoutSessionPage({ userId }) {
       };
       const result = await createWorkout(payload);
       setCreatedWorkoutId(result.workout_id);
-      setStatus(`Workout #${result.workout_id} saved.`);
+      setStatus(`Тренировка #${result.workout_id} сохранена.`);
     } catch (err) {
       setError(err.message);
       setStatus("");
@@ -147,8 +142,10 @@ export default function WorkoutSessionPage({ userId }) {
   }
 
   return (
-    <section>
-      <h2>Workout session</h2>
+    <section className="page-stack">
+      <div className="page-header">
+        <h2>Запись тренировки</h2>
+      </div>
       <p className="subtle">
         Записывайте тренировку в форме: выберите упражнение, укажите вес и количество повторений в каждом подходе.
       </p>
@@ -177,9 +174,9 @@ export default function WorkoutSessionPage({ userId }) {
                   value={exercise.exercise}
                   onChange={(event) => updateExerciseField(exerciseIndex, "exercise", event.target.value)}
                 >
-                  {EXERCISE_OPTIONS.map((name) => (
-                    <option value={name} key={name}>
-                      {name}
+                  {EXERCISE_OPTIONS.map((item) => (
+                    <option value={item.value} key={item.value}>
+                      {item.label}
                     </option>
                   ))}
                 </select>
@@ -273,18 +270,35 @@ export default function WorkoutSessionPage({ userId }) {
         ))}
 
         <div className="row">
-          <button onClick={submitWorkout}>Save workout</button>
+          <button onClick={submitWorkout}>Сохранить тренировку</button>
         </div>
       </div>
 
       {status && <p className="status">{status}</p>}
       {error && <p className="error">{error}</p>}
-      {createdWorkoutId && <p className="status">Created workout id: {createdWorkoutId}</p>}
+      {createdWorkoutId && <p className="status">Создана тренировка: ID {createdWorkoutId}</p>}
 
       <details className="card">
         <summary>Предпросмотр JSON</summary>
         <pre>{JSON.stringify(preview, null, 2)}</pre>
       </details>
+
+      <BodyTrafficVisualizer
+        zones={zoneLoad}
+        subtitle="Нагрузка текущей тренировки в цветах светофора: зеленый — низкая, желтый — средняя, красный — высокая."
+      />
+
+      <div className="card">
+        <h3>Топ нагруженных мышц в этой тренировке</h3>
+        <ul>
+          {topMuscles.length === 0 && <li>Добавьте упражнения, чтобы увидеть распределение нагрузки.</li>}
+          {topMuscles.map(([muscle, value]) => (
+            <li key={muscle}>
+              {translateMuscle(muscle)} — {Math.round(value)} усл. ед.
+            </li>
+          ))}
+        </ul>
+      </div>
     </section>
   );
 }

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { createUser, getAnalysis } from "../api";
+import { ruText } from "../utils/textRu";
 
 const defaultUser = {
   age: 28,
@@ -11,6 +12,13 @@ const defaultUser = {
   goals: ["strength", "hypertrophy"],
 };
 
+const goalOptions = [
+  { value: "strength", label: "Сила" },
+  { value: "hypertrophy", label: "Гипертрофия" },
+  { value: "endurance", label: "Выносливость" },
+  { value: "health", label: "Здоровье" },
+];
+
 export default function DashboardPage({ userId, setUserId }) {
   const [form, setForm] = useState(defaultUser);
   const [status, setStatus] = useState("");
@@ -18,11 +26,16 @@ export default function DashboardPage({ userId, setUserId }) {
   const [error, setError] = useState("");
 
   const updateField = (field, value) => setForm((prev) => ({ ...prev, [field]: value }));
+  const toggleGoal = (goal) =>
+    setForm((prev) => ({
+      ...prev,
+      goals: prev.goals.includes(goal) ? prev.goals.filter((item) => item !== goal) : [...prev.goals, goal],
+    }));
 
   async function handleCreateUser(event) {
     event.preventDefault();
     setError("");
-    setStatus("Creating user...");
+    setStatus("Создание профиля...");
     try {
       const created = await createUser({
         ...form,
@@ -31,7 +44,7 @@ export default function DashboardPage({ userId, setUserId }) {
         weight_kg: Number(form.weight_kg),
       });
       setUserId(String(created.id));
-      setStatus(`Created user #${created.id}`);
+      setStatus(`Профиль создан: #${created.id}`);
     } catch (err) {
       setError(err.message);
       setStatus("");
@@ -40,15 +53,15 @@ export default function DashboardPage({ userId, setUserId }) {
 
   async function handleLoadAnalysis() {
     if (!userId) {
-      setError("Enter or create a user first.");
+      setError("Введите ID или создайте профиль.");
       return;
     }
     setError("");
-    setStatus("Loading analysis...");
+    setStatus("Загрузка AI-анализа...");
     try {
       const data = await getAnalysis(userId);
       setAnalysis(data);
-      setStatus("Analysis loaded.");
+      setStatus("AI-анализ загружен.");
     } catch (err) {
       setError(err.message);
       setStatus("");
@@ -56,26 +69,28 @@ export default function DashboardPage({ userId, setUserId }) {
   }
 
   return (
-    <section>
-      <h2>Dashboard</h2>
-      <p className="subtle">Create a profile, then use other pages to log sessions and review AI insights.</p>
+    <section className="page-stack">
+      <div className="page-header">
+        <h2>Профиль и AI-сводка</h2>
+        <p className="subtle">Создайте профиль, сохраняйте тренировки и получайте персональные рекомендации.</p>
+      </div>
 
       <form className="card form-grid" onSubmit={handleCreateUser}>
-        <h3>Create user profile</h3>
+        <h3>Профиль пользователя</h3>
         <label>
-          Age
+          Возраст
           <input type="number" value={form.age} onChange={(e) => updateField("age", e.target.value)} />
         </label>
         <label>
-          Sex
+          Пол
           <select value={form.sex} onChange={(e) => updateField("sex", e.target.value)}>
-            <option value="male">male</option>
-            <option value="female">female</option>
-            <option value="neutral">neutral</option>
+            <option value="male">мужской</option>
+            <option value="female">женский</option>
+            <option value="neutral">нейтральный</option>
           </select>
         </label>
         <label>
-          Height (cm)
+          Рост (см)
           <input
             type="number"
             value={form.height_cm}
@@ -83,7 +98,7 @@ export default function DashboardPage({ userId, setUserId }) {
           />
         </label>
         <label>
-          Weight (kg)
+          Вес (кг)
           <input
             type="number"
             value={form.weight_kg}
@@ -91,26 +106,42 @@ export default function DashboardPage({ userId, setUserId }) {
           />
         </label>
         <label>
-          Level
+          Уровень
           <select value={form.training_level} onChange={(e) => updateField("training_level", e.target.value)}>
-            <option value="beginner">beginner</option>
-            <option value="intermediate">intermediate</option>
-            <option value="advanced">advanced</option>
+            <option value="beginner">начальный</option>
+            <option value="intermediate">средний</option>
+            <option value="advanced">продвинутый</option>
           </select>
         </label>
         <label>
-          Style
+          Стиль
           <select value={form.training_style} onChange={(e) => updateField("training_style", e.target.value)}>
-            <option value="full_body">full_body</option>
+            <option value="full_body">full body</option>
             <option value="split">split</option>
-            <option value="custom">custom</option>
+            <option value="custom">кастомный</option>
           </select>
         </label>
 
+        <div className="goal-picker">
+          <p>Цели</p>
+          <div className="chip-row">
+            {goalOptions.map((goal) => (
+              <button
+                key={goal.value}
+                type="button"
+                className={`chip ${form.goals.includes(goal.value) ? "active" : ""}`}
+                onClick={() => toggleGoal(goal.value)}
+              >
+                {goal.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className="row">
-          <button type="submit">Create user</button>
+          <button type="submit">Создать профиль</button>
           <button type="button" onClick={handleLoadAnalysis}>
-            Load latest analysis
+            Обновить AI-сводку
           </button>
         </div>
       </form>
@@ -120,8 +151,8 @@ export default function DashboardPage({ userId, setUserId }) {
 
       {analysis && (
         <div className="card">
-          <h3>AI summary</h3>
-          <pre>{analysis.textual_analysis}</pre>
+          <h3>AI-сводка по последней тренировке</h3>
+          <pre>{analysis.textual_analysis.split("\n").map((line) => ruText(line)).join("\n")}</pre>
         </div>
       )}
     </section>

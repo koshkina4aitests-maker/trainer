@@ -10,7 +10,7 @@ async function request(path, options = {}) {
   });
   if (!response.ok) {
     const text = await response.text();
-    throw new Error(text || `HTTP error ${response.status}`);
+    throw new Error(text || `Ошибка запроса: ${response.status}`);
   }
   return response.json();
 }

@@ -252,13 +252,13 @@ class TrainingAIEngine:
 
         notes: List[str] = []
         if overloaded:
-            notes.append(f"High fatigue muscles excluded: {', '.join(sorted(overloaded))}.")
+            notes.append(f"Из-за высокой усталости исключены мышцы: {', '.join(sorted(overloaded))}.")
 
         recent = self._recent_muscle_loads()
         if recent:
             low_load = sorted(recent.items(), key=lambda kv: kv[1])[:3]
             undertrained = [muscle for muscle, _ in low_load]
-            notes.append(f"Undertrained recently: {', '.join(undertrained)}.")
+            notes.append(f"Недогруженные за последнее время: {', '.join(undertrained)}.")
 
         return WorkoutRecommendation(
             focus_muscles=focus_filtered,
@@ -285,7 +285,7 @@ class TrainingAIEngine:
             return ProgressionRecommendation(
                 exercise=exercise_name,
                 should_increase_weight=False,
-                reason="Not enough consecutive sessions for progression check.",
+                reason="Недостаточно последовательных тренировок для проверки прогрессии.",
             )
 
         all_hit_top = all(min(exercise.rep_list()) >= rep_upper_bound for exercise in matching)
@@ -294,13 +294,13 @@ class TrainingAIEngine:
                 exercise=exercise_name,
                 should_increase_weight=True,
                 suggested_increment_kg=increment_kg,
-                reason=f"Top rep bound ({rep_upper_bound}) reached in 3 consecutive sessions.",
+                reason=f"Верхняя граница повторений ({rep_upper_bound}) достигнута в 3 тренировках подряд.",
             )
 
         return ProgressionRecommendation(
             exercise=exercise_name,
             should_increase_weight=False,
-            reason="Rep target not consistently reached yet.",
+            reason="Целевой диапазон повторений пока не достигается стабильно.",
         )
 
     def autoregulate_from_rir(
@@ -340,7 +340,7 @@ class TrainingAIEngine:
 
     def evaluate_deload(self) -> DeloadRecommendation:
         if len(self.workout_history) < 4:
-            return DeloadRecommendation(False, "Insufficient training history for deload detection.")
+            return DeloadRecommendation(False, "Недостаточно истории тренировок для оценки необходимости deload.")
 
         fatigue = self.get_fatigue_snapshot()
         high_fatigue_count = sum(1 for value in fatigue.values() if value >= 75.0)
@@ -360,16 +360,16 @@ class TrainingAIEngine:
         if fatigue_trigger and rep_drop_trigger:
             return DeloadRecommendation(
                 should_deload=True,
-                reason="Accumulated fatigue + performance drop detected.",
+                reason="Обнаружены накопленная усталость и снижение результативности.",
                 weight_adjustment_pct=-20.0,
                 volume_adjustment_pct=-30.0,
             )
         if fatigue_trigger:
             return DeloadRecommendation(
                 should_deload=False,
-                reason="Fatigue is high; monitor one more session before deload.",
+                reason="Усталость высокая: отследите еще одну тренировку перед deload.",
             )
-        return DeloadRecommendation(False, "No strong deload signals.")
+        return DeloadRecommendation(False, "Явных сигналов для deload не обнаружено.")
 
     def analyze_heart_rate(
         self,
@@ -384,20 +384,20 @@ class TrainingAIEngine:
                 target_zone=target_zone,
                 recommended_rest_sec=current_rest_sec + 30,
                 status="under_recovered",
-                note="Recovery HR is above target; extend rest before next set.",
+                note="Пульс восстановления выше целевого диапазона: увеличьте отдых перед следующим подходом.",
             )
         if heart_rate_recovery < low and heart_rate_after_set < high + 20:
             return HeartRateGuidance(
                 target_zone=target_zone,
                 recommended_rest_sec=max(30, current_rest_sec - 15),
                 status="ready",
-                note="Cardio recovery is good; you can shorten rest slightly.",
+                note="Восстановление хорошее: можно немного сократить отдых.",
             )
         return HeartRateGuidance(
             target_zone=target_zone,
             recommended_rest_sec=current_rest_sec,
             status="normal",
-            note="Current rest duration is appropriate.",
+            note="Текущая длительность отдыха подходит.",
         )
 
     def analyze_workout(self, workout: WorkoutSession) -> WorkoutAnalysis:
@@ -407,7 +407,7 @@ class TrainingAIEngine:
 
         if load:
             top_muscle, top_load = max(load.items(), key=lambda kv: kv[1])
-            positives.append(f"Strong session for {top_muscle} ({top_load:.0f} load units).")
+            positives.append(f"Хорошая нагрузка на {top_muscle} ({top_load:.0f} усл. ед.).")
 
         progression_hits = []
         for exercise in workout.exercises:
@@ -416,18 +416,18 @@ class TrainingAIEngine:
                 if min(exercise.rep_list()) >= upper:
                     progression_hits.append(exercise.exercise)
         if progression_hits:
-            positives.append(f"Rep targets reached in: {', '.join(progression_hits)}.")
+            positives.append(f"Целевые повторы достигнуты в упражнениях: {', '.join(progression_hits)}.")
 
         fatigue = self.get_fatigue_snapshot(workout.performed_at)
         high_fatigue = [muscle for muscle, score in fatigue.items() if score >= 80.0]
         if high_fatigue:
-            warnings.append(f"High fatigue warning for: {', '.join(sorted(high_fatigue))}.")
+            warnings.append(f"Высокая усталость мышц: {', '.join(sorted(high_fatigue))}.")
 
         suggestion = self.suggest_next_workout()
         if suggestion.focus_muscles:
-            next_hint = f"Next session focus: {', '.join(suggestion.focus_muscles[:4])}."
+            next_hint = f"Фокус следующей тренировки: {', '.join(suggestion.focus_muscles[:4])}."
         else:
-            next_hint = "Next session: recovery or low-intensity full body."
+            next_hint = "Следующая тренировка: восстановительная или full body низкой интенсивности."
         return WorkoutAnalysis(positives=positives, warnings=warnings, next_session_hint=next_hint)
 
     def analyze_imbalance(self, lookback_days: int = 28) -> List[ImbalanceInsight]:
@@ -447,7 +447,7 @@ class TrainingAIEngine:
             if ratio >= 1.8 and max(load_a, load_b) > 0:
                 dominant = a if load_a > load_b else b
                 weaker = b if dominant == a else a
-                message = f"{dominant} receives significantly more load than {weaker} (x{ratio:.2f})."
+                message = f"{dominant} получает заметно больше нагрузки, чем {weaker} (x{ratio:.2f})."
                 insights.append(ImbalanceInsight((a, b), load_a, load_b, ratio, message))
         return insights
 

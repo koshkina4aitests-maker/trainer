@@ -31,8 +31,9 @@ class AIAnalysisService:
                         {
                             "type": "input_text",
                             "text": (
-                                "You are a strength-coaching assistant. Return concise, safe, practical "
-                                "feedback based on workout data, fatigue, and progression signals."
+                                "Ты AI-тренер по силовым тренировкам. Отвечай только по-русски. "
+                                "Давай краткие, безопасные и практичные рекомендации по данным тренировки, "
+                                "усталости и прогрессии."
                             ),
                         }
                     ],
@@ -83,15 +84,15 @@ class AIAnalysisService:
     ) -> str:
         return "\n".join(
             [
-                "User profile and training context:",
+                "Профиль пользователя и контекст тренировок:",
                 json.dumps(user_context, ensure_ascii=True),
-                "Structured session analysis:",
+                "Структурный анализ сессии:",
                 json.dumps(structured_analysis, ensure_ascii=True),
-                "Suggested next workout:",
+                "Рекомендация на следующую тренировку:",
                 json.dumps(recommendation, ensure_ascii=True),
-                "Progress snapshot:",
+                "Снимок прогресса:",
                 json.dumps(progress_snapshot, ensure_ascii=True),
-                "Provide: 1) short summary, 2) key risk if any, 3) specific next-session action list.",
+                "Дай: 1) краткую сводку, 2) главный риск (если есть), 3) конкретные действия на следующую тренировку.",
             ]
         )
 
@@ -119,16 +120,16 @@ class AIAnalysisService:
         focus = recommendation.get("focus_muscles") or []
         exercises = recommendation.get("exercises") or []
 
-        lines = ["Session summary:"]
+        lines = ["Сводка тренировки:"]
         if positives:
-            lines.append(f"- Positives: {', '.join(positives)}")
+            lines.append(f"- Сильные стороны: {', '.join(positives)}")
         if warnings:
-            lines.append(f"- Warnings: {', '.join(warnings)}")
+            lines.append(f"- Предупреждения: {', '.join(warnings)}")
         if focus:
-            lines.append(f"- Next focus muscles: {', '.join(focus[:4])}")
+            lines.append(f"- Фокус следующей тренировки: {', '.join(focus[:4])}")
         if exercises:
-            lines.append(f"- Suggested exercises: {', '.join(exercises[:5])}")
+            lines.append(f"- Рекомендованные упражнения: {', '.join(exercises[:5])}")
         if not positives and not warnings:
-            lines.append("- No major performance flags detected.")
-        lines.append("Action: keep 1-3 RIR on compounds and avoid failure if fatigue remains high.")
+            lines.append("- Критичных флагов по результативности не обнаружено.")
+        lines.append("Действие: держите 1-3 RIR в базовых упражнениях и избегайте отказа при высокой усталости.")
         return "\n".join(lines)

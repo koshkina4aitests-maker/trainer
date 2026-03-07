@@ -19,14 +19,15 @@ export default function App() {
   return (
     <div className="app-shell">
       <aside className="sidebar">
-        <h1>Trainer</h1>
+        <h1>Тренер AI</h1>
+        <p className="sidebar-subtitle">Персональные силовые тренировки</p>
         <div className="user-id-box">
-          <label htmlFor="user-id">User ID</label>
+          <label htmlFor="user-id">ID пользователя</label>
           <input
             id="user-id"
             value={userId}
             onChange={(event) => setUserId(event.target.value)}
-            placeholder="Create user first"
+            placeholder="Сначала создайте профиль"
           />
         </div>
         <Navigation />

@@ -1,11 +1,11 @@
 import { NavLink } from "react-router-dom";
 
 const items = [
-  { to: "/dashboard", label: "Dashboard" },
-  { to: "/today", label: "Today's workout" },
-  { to: "/session", label: "Workout session" },
-  { to: "/progress", label: "Progress analytics" },
-  { to: "/body", label: "Body muscle visualization" },
+  { to: "/dashboard", label: "Профиль и AI-сводка" },
+  { to: "/today", label: "Тренировка на сегодня" },
+  { to: "/session", label: "Запись тренировки" },
+  { to: "/progress", label: "Прогресс и аналитика" },
+  { to: "/body", label: "Карта мышц" },
 ];
 
 export default function Navigation() {

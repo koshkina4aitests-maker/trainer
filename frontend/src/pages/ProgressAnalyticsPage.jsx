@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { getAnalysis } from "../api";
+import { translateExercise, translateMuscle } from "../utils/trainingModel";
+import { ruText } from "../utils/textRu";
 
 export default function ProgressAnalyticsPage({ userId }) {
   const [analysis, setAnalysis] = useState(null);
@@ -7,7 +9,7 @@ export default function ProgressAnalyticsPage({ userId }) {
 
   async function load() {
     if (!userId) {
-      setError("Set user ID first.");
+      setError("Введите ID пользователя.");
       return;
     }
     setError("");
@@ -20,19 +22,22 @@ export default function ProgressAnalyticsPage({ userId }) {
   }
 
   return (
-    <section>
-      <h2>Progress analytics</h2>
-      <button onClick={load}>Load progress data</button>
+    <section className="page-stack">
+      <div className="page-header">
+        <h2>Прогресс и аналитика</h2>
+        <p className="subtle">Динамика нагрузок, прогрессии, deload-сигналов и дисбалансов.</p>
+      </div>
+      <button onClick={load}>Загрузить аналитику</button>
       {error && <p className="error">{error}</p>}
 
       {analysis && (
         <>
           <div className="card">
-            <h3>Progression suggestions</h3>
+            <h3>Прогрессия веса</h3>
             <ul>
               {analysis.progression.map((item) => (
                 <li key={item.exercise}>
-                  <strong>{item.exercise}</strong>: {item.reason}
+                  <strong>{translateExercise(item.exercise)}</strong>: {ruText(item.reason)}
                   {item.should_increase_weight ? ` (+${item.suggested_increment_kg} kg)` : ""}
                 </li>
               ))}
@@ -40,28 +45,32 @@ export default function ProgressAnalyticsPage({ userId }) {
           </div>
 
           <div className="card">
-            <h3>Deload status</h3>
-            <p>{analysis.deload.reason}</p>
+            <h3>Статус deload</h3>
+            <p>{ruText(analysis.deload.reason)}</p>
             {analysis.deload.should_deload && (
               <p>
-                Recommended: {analysis.deload.weight_adjustment_pct}% weight,{" "}
-                {analysis.deload.volume_adjustment_pct}% volume.
+                Рекомендация: {analysis.deload.weight_adjustment_pct}% к весу и{" "}
+                {analysis.deload.volume_adjustment_pct}% к объему.
               </p>
             )}
           </div>
 
           <div className="card">
-            <h3>Load imbalances</h3>
-            {analysis.imbalances.length === 0 && <p>No major imbalances found.</p>}
+            <h3>Мышечные дисбалансы</h3>
+            {analysis.imbalances.length === 0 && <p>Критичных дисбалансов не обнаружено.</p>}
             <ul>
               {analysis.imbalances.map((item, index) => (
-                <li key={`${item.pair?.join("-") ?? "imbalance"}-${index}`}>{item.message}</li>
+                <li key={`${item.pair?.join("-") ?? "imbalance"}-${index}`}>
+                  {Array.isArray(item.pair) && item.pair.length === 2
+                    ? `${translateMuscle(item.pair[0])} / ${translateMuscle(item.pair[1])}: x${item.ratio?.toFixed?.(2) ?? "—"}`
+                    : ruText(item.message)}
+                </li>
               ))}
             </ul>
           </div>
 
           <div className="card">
-            <h3>Exercise progress snapshot</h3>
+            <h3>Снимок прогресса упражнений</h3>
             <pre>{JSON.stringify(analysis.progress_snapshot.exercise_progress, null, 2)}</pre>
           </div>
         </>
