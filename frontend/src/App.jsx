@@ -34,14 +34,27 @@ export default function App() {
       </aside>
 
       <main className="main-content">
-        <Routes>
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="/dashboard" element={<DashboardPage userId={userId} setUserId={setUserId} />} />
-          <Route path="/today" element={<TodaysWorkoutPage userId={userId} />} />
-          <Route path="/session" element={<WorkoutSessionPage userId={userId} />} />
-          <Route path="/progress" element={<ProgressAnalyticsPage userId={userId} />} />
-          <Route path="/body" element={<BodyVisualizationPage userId={userId} />} />
-        </Routes>
+        <div className="main-topbar card">
+          <div>
+            <p className="topbar-label">Smart Workout Diary style</p>
+            <h2>AI-дневник тренировок</h2>
+          </div>
+          <div className="topbar-meta">
+            <span>{new Date().toLocaleDateString("ru-RU")}</span>
+            <span>ID: {userId || "—"}</span>
+          </div>
+        </div>
+
+        <div className="page-container">
+          <Routes>
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/dashboard" element={<DashboardPage userId={userId} setUserId={setUserId} />} />
+            <Route path="/today" element={<TodaysWorkoutPage userId={userId} />} />
+            <Route path="/session" element={<WorkoutSessionPage userId={userId} />} />
+            <Route path="/progress" element={<ProgressAnalyticsPage userId={userId} />} />
+            <Route path="/body" element={<BodyVisualizationPage userId={userId} />} />
+          </Routes>
+        </div>
       </main>
     </div>
   );

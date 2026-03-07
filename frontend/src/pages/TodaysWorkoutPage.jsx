@@ -7,6 +7,7 @@ export default function TodaysWorkoutPage({ userId }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
   const [status, setStatus] = useState("");
+  const [search, setSearch] = useState("");
 
   async function loadRecommendation() {
     if (!userId) {
@@ -37,17 +38,36 @@ export default function TodaysWorkoutPage({ userId }) {
 
       {data && (
         <div className="card split-card">
+          <label className="search-field">
+            <span>Поиск упражнения</span>
+            <input
+              type="text"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Например: жим, тяга, присед"
+            />
+          </label>
+
           <h3>Фокус по мышцам</h3>
-          <ul>
+          <ul className="tag-list">
             {data.focus_muscles.map((muscle) => (
-              <li key={muscle}>{translateMuscle(muscle)}</li>
+              <li key={muscle} className="tag-item">
+                {translateMuscle(muscle)}
+              </li>
             ))}
           </ul>
 
           <h3>Рекомендованные упражнения</h3>
-          <ul>
-            {data.exercises.map((exercise) => (
-              <li key={exercise}>{translateExercise(exercise)}</li>
+          <ul className="exercise-list">
+            {data.exercises
+              .filter((exercise) =>
+                translateExercise(exercise).toLowerCase().includes(search.trim().toLowerCase())
+              )
+              .map((exercise) => (
+              <li key={exercise} className="exercise-list-item">
+                <strong>{translateExercise(exercise)}</strong>
+                <span>Готово к выполнению</span>
+              </li>
             ))}
           </ul>
 

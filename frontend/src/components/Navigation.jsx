@@ -1,11 +1,11 @@
 import { NavLink } from "react-router-dom";
 
 const items = [
-  { to: "/dashboard", label: "Профиль и AI-сводка" },
-  { to: "/today", label: "Тренировка на сегодня" },
-  { to: "/session", label: "Запись тренировки" },
-  { to: "/progress", label: "Прогресс и аналитика" },
-  { to: "/body", label: "Карта мышц" },
+  { to: "/dashboard", label: "Профиль и AI-сводка", icon: "🏠" },
+  { to: "/today", label: "Тренировка на сегодня", icon: "💡" },
+  { to: "/session", label: "Запись тренировки", icon: "📝" },
+  { to: "/progress", label: "Прогресс и аналитика", icon: "📈" },
+  { to: "/body", label: "Карта мышц", icon: "🧠" },
 ];
 
 export default function Navigation() {
@@ -17,7 +17,8 @@ export default function Navigation() {
           to={item.to}
           className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`}
         >
-          {item.label}
+          <span className="nav-icon">{item.icon}</span>
+          <span>{item.label}</span>
         </NavLink>
       ))}
     </nav>

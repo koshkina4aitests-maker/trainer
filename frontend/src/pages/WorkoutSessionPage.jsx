@@ -5,6 +5,7 @@ import {
   EXERCISE_OPTIONS,
   buildZonesFromMuscleLoad,
   calculateSessionMuscleLoad,
+  translateExercise,
   translateMuscle,
 } from "../utils/trainingModel";
 
@@ -57,6 +58,20 @@ export default function WorkoutSessionPage({ userId }) {
         .sort((a, b) => b[1] - a[1])
         .slice(0, 6),
     [muscleLoad]
+  );
+  const activityFeed = useMemo(
+    () =>
+      exercises.map((exercise, index) => {
+        const totalReps = exercise.sets.reduce((acc, setItem) => acc + Number(setItem.reps || 0), 0);
+        const tag = totalReps >= 30 ? "Высокий объем" : totalReps >= 20 ? "Рабочий объем" : "Низкий объем";
+        return {
+          id: `${exercise.exercise}-${index}`,
+          exercise: exercise.exercise,
+          totalReps,
+          tag,
+        };
+      }),
+    [exercises]
   );
 
   function updateExerciseField(exerciseIndex, field, value) {
@@ -149,6 +164,21 @@ export default function WorkoutSessionPage({ userId }) {
       <p className="subtle">
         Записывайте тренировку в форме: выберите упражнение, укажите вес и количество повторений в каждом подходе.
       </p>
+
+      <div className="card">
+        <h3>Записанные активности</h3>
+        <div className="feed-list">
+          {activityFeed.map((item) => (
+            <div className="feed-item" key={item.id}>
+              <div>
+                <strong>{translateExercise(item.exercise)}</strong>
+                <p className="subtle">Всего повторений: {item.totalReps}</p>
+              </div>
+              <span className="tag-item">{item.tag}</span>
+            </div>
+          ))}
+        </div>
+      </div>
 
       <div className="card">
         <div className="row">
