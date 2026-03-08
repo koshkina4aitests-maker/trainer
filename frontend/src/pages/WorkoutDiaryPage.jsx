@@ -214,9 +214,11 @@ function buildMuscleLoads(exercises) {
     .sort((a, b) => b[1] - a[1]);
 }
 
-export default function WorkoutDiaryPage() {
+export default function WorkoutDiaryPage({ onSaveWorkout }) {
   const [exercises, setExercises] = useState(initialExercises);
   const [exerciseToAdd, setExerciseToAdd] = useState("bench_press");
+  const [workoutTitle, setWorkoutTitle] = useState("Силовая тренировка");
+  const [saveMessage, setSaveMessage] = useState("");
 
   const totals = useMemo(() => {
     const totalPlannedSets = exercises.reduce((acc, exercise) => acc + exercise.targetSets, 0);
@@ -294,6 +296,40 @@ export default function WorkoutDiaryPage() {
     setExercises((prev) => [...prev, createExercise(exerciseToAdd, 2)]);
   }
 
+  function createWorkoutSnapshot() {
+    const totalLoad = exercises.reduce(
+      (acc, exercise) =>
+        acc + exercise.sets.reduce((setAcc, setItem) => setAcc + setLoad(setItem), 0),
+      0,
+    );
+
+    return {
+      id: crypto.randomUUID(),
+      title: workoutTitle.trim() || "Тренировка",
+      savedAt: new Date().toISOString(),
+      durationMinutes: Math.max(20, totals.totalPlannedSets * 2),
+      totalLoad: Math.round(totalLoad),
+      exercises: exercises.map((exercise) => ({
+        exerciseId: exercise.id,
+        kind: exercise.kind,
+        name: translateExercise(exercise.kind),
+        setsCount: exercise.sets.length,
+        completedSets: exercise.sets.filter((setItem) => setItem.completed).length,
+        load: Math.round(exercise.sets.reduce((acc, setItem) => acc + setLoad(setItem), 0)),
+      })),
+      muscleLoads: muscleLoads.map(([muscle, load]) => ({
+        muscle: translateMuscle(muscle),
+        load,
+      })),
+    };
+  }
+
+  function handleSaveWorkout() {
+    const snapshot = createWorkoutSnapshot();
+    onSaveWorkout?.(snapshot);
+    setSaveMessage(`Тренировка «${snapshot.title}» сохранена.`);
+  }
+
   return (
     <div className="min-h-screen bg-slate-100 p-3 md:p-6">
       <div className="mx-auto max-w-7xl space-y-4">
@@ -349,6 +385,12 @@ export default function WorkoutDiaryPage() {
             </div>
 
             <div className="flex w-full flex-col gap-2 md:w-auto md:flex-row md:items-center">
+              <Input
+                value={workoutTitle}
+                onChange={(event) => setWorkoutTitle(event.target.value)}
+                placeholder="Название тренировки"
+                className="h-10 min-w-[220px]"
+              />
               <select
                 value={exerciseToAdd}
                 onChange={(event) => setExerciseToAdd(event.target.value)}
@@ -365,9 +407,18 @@ export default function WorkoutDiaryPage() {
                 <Plus className="h-4 w-4" />
                 Добавить упражнение
               </Button>
+              <Button className="h-10" onClick={handleSaveWorkout}>
+                Сохранить тренировку
+              </Button>
             </div>
           </CardContent>
         </Card>
+
+        {saveMessage && (
+          <Card className="rounded-2xl border-emerald-200 bg-emerald-50">
+            <CardContent className="p-3 text-sm font-medium text-emerald-700">{saveMessage}</CardContent>
+          </Card>
+        )}
 
         <section className="grid gap-4 lg:grid-cols-[1.85fr_1fr]">
           <div className="space-y-4">
