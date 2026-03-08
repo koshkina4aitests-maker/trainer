@@ -7,34 +7,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { Input } from "../components/ui/input";
 import { Progress } from "../components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table";
+import {
+  exerciseDefinitions,
+  getMuscleCoefficients,
+  translateExercise,
+  translateMuscle,
+} from "../utils/trainingModel";
 
-const EXERCISE_LIBRARY = {
-  bench: {
-    name: "Жим штанги лёжа",
-    defaultWeight: 20,
-    defaultReps: 10,
-    defaultRir: 2,
-    primary: ["Грудь"],
-    secondary: ["Трицепс", "Плечи"],
-    muscleCoefficients: {
-      Грудь: 1,
-      Трицепс: 0.5,
-      Плечи: 0.5,
-    },
-  },
-  pullup: {
-    name: "Подтягивания",
-    defaultWeight: 1,
-    defaultReps: 10,
-    defaultRir: 2,
-    primary: ["Спина"],
-    secondary: ["Бицепс", "Плечи"],
-    muscleCoefficients: {
-      Спина: 1,
-      Бицепс: 0.5,
-      Плечи: 0.5,
-    },
-  },
+const DEFAULT_SET_PRESETS = {
+  bench_press: { weight: 20, reps: 10, rir: 2 },
+  pullups: { weight: 1, reps: 10, rir: 2 },
 };
 
 function createSet(weight = 20, reps = 10, rir = 2, completed = false) {
@@ -48,13 +30,13 @@ function createSet(weight = 20, reps = 10, rir = 2, completed = false) {
 }
 
 function createExercise(kind, targetSets = 2) {
-  const meta = EXERCISE_LIBRARY[kind];
+  const preset = DEFAULT_SET_PRESETS[kind] ?? { weight: 20, reps: 10, rir: 2 };
   return {
     id: crypto.randomUUID(),
     kind,
     targetSets,
     sets: Array.from({ length: targetSets }, () =>
-      createSet(meta.defaultWeight, meta.defaultReps, meta.defaultRir, false),
+      createSet(preset.weight, preset.reps, preset.rir, false),
     ),
   };
 }
@@ -62,10 +44,10 @@ function createExercise(kind, targetSets = 2) {
 function initialExercises() {
   return [
     {
-      ...createExercise("bench", 2),
+      ...createExercise("bench_press", 2),
       sets: [createSet(20, 10, 2, true), createSet(20, 10, 2, true)],
     },
-    createExercise("pullup", 2),
+    createExercise("pullups", 2),
   ];
 }
 
@@ -86,7 +68,15 @@ function dotColorClass(ratio) {
 }
 
 function ExerciseCard({ exercise, canDelete, onToggleSet, onChangeSet, onAddSet, onDeleteExercise }) {
-  const meta = EXERCISE_LIBRARY[exercise.kind];
+  const coefficients = getMuscleCoefficients(exercise.kind);
+  const sortedMuscles = Object.entries(coefficients).sort((a, b) => b[1] - a[1]);
+  const primary = sortedMuscles
+    .filter(([, coefficient]) => coefficient >= 0.9)
+    .map(([muscleId]) => translateMuscle(muscleId));
+  const secondary = sortedMuscles
+    .filter(([, coefficient]) => coefficient < 0.9)
+    .slice(0, 3)
+    .map(([muscleId]) => translateMuscle(muscleId));
   const completedCount = exercise.sets.filter((setItem) => setItem.completed).length;
 
   return (
@@ -94,13 +84,15 @@ function ExerciseCard({ exercise, canDelete, onToggleSet, onChangeSet, onAddSet,
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between gap-3">
           <div className="space-y-2">
-            <CardTitle className="text-[34px] leading-none tracking-tight md:text-2xl">{meta.name}</CardTitle>
+            <CardTitle className="text-[34px] leading-none tracking-tight md:text-2xl">
+              {translateExercise(exercise.kind)}
+            </CardTitle>
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant="default">
-                Основные: {meta.primary.join(", ")}
+                Основные: {(primary.length > 0 ? primary : [secondary[0] ?? "—"]).join(", ")}
               </Badge>
               <Badge variant="secondary">
-                Вторичные: {meta.secondary.join(", ")}
+                Вторичные: {(secondary.length > 0 ? secondary : ["—"]).join(", ")}
               </Badge>
             </div>
           </div>
@@ -209,7 +201,7 @@ function ExerciseCard({ exercise, canDelete, onToggleSet, onChangeSet, onAddSet,
 function buildMuscleLoads(exercises) {
   const loads = {};
   for (const exercise of exercises) {
-    const map = EXERCISE_LIBRARY[exercise.kind].muscleCoefficients;
+    const map = getMuscleCoefficients(exercise.kind);
     for (const setItem of exercise.sets) {
       const exerciseLoad = setLoad(setItem);
       for (const [muscle, coefficient] of Object.entries(map)) {
@@ -224,7 +216,7 @@ function buildMuscleLoads(exercises) {
 
 export default function WorkoutDiaryPage() {
   const [exercises, setExercises] = useState(initialExercises);
-  const [exerciseToAdd, setExerciseToAdd] = useState("bench");
+  const [exerciseToAdd, setExerciseToAdd] = useState("bench_press");
 
   const totals = useMemo(() => {
     const totalPlannedSets = exercises.reduce((acc, exercise) => acc + exercise.targetSets, 0);
@@ -362,8 +354,8 @@ export default function WorkoutDiaryPage() {
                 onChange={(event) => setExerciseToAdd(event.target.value)}
                 className="h-10 min-w-[240px] rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-sm outline-none focus:ring-2 focus:ring-blue-500"
               >
-                {Object.entries(EXERCISE_LIBRARY).map(([key, item]) => (
-                  <option value={key} key={key}>
+                {Object.values(exerciseDefinitions).map((item) => (
+                  <option value={item.id} key={item.id}>
                     {item.name}
                   </option>
                 ))}
@@ -403,7 +395,7 @@ export default function WorkoutDiaryPage() {
                 return (
                   <div key={muscle} className="space-y-2">
                     <div className="flex items-center justify-between text-base">
-                      <span className="font-medium text-slate-700">{muscle}</span>
+                      <span className="font-medium text-slate-700">{translateMuscle(muscle)}</span>
                       <div className="flex items-center gap-2 text-slate-600">
                         <span className="font-semibold">{load}</span>
                         <span className={`h-2.5 w-2.5 rounded-full ${dotColorClass(ratio)}`} />

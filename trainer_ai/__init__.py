@@ -1,4 +1,14 @@
 from .engine import TrainingAIEngine
+from .muscle_model import (
+    EXERCISE_DEFINITIONS,
+    MUSCLE_COEFFICIENTS,
+    MUSCLE_DEFINITIONS,
+    MUSCLE_DEFINITIONS_LIST,
+    get_muscle_coefficients,
+    getMuscleCoefficients,
+    muscleCoefficients,
+    muscleDefinitions,
+)
 from .models import (
     DeloadRecommendation,
     ExercisePerformance,
@@ -18,9 +28,17 @@ __all__ = [
     "ExerciseSetSample",
     "HeartRateGuidance",
     "ImbalanceInsight",
+    "EXERCISE_DEFINITIONS",
+    "MUSCLE_COEFFICIENTS",
+    "MUSCLE_DEFINITIONS",
+    "MUSCLE_DEFINITIONS_LIST",
     "ProgressionRecommendation",
     "TrainingAIEngine",
     "UserProfile",
+    "get_muscle_coefficients",
+    "getMuscleCoefficients",
+    "muscleCoefficients",
+    "muscleDefinitions",
     "WorkoutAnalysis",
     "WorkoutRecommendation",
     "WorkoutSession",

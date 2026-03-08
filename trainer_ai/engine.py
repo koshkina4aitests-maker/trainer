@@ -6,6 +6,7 @@ from datetime import UTC, datetime
 from statistics import mean
 from typing import Dict, Iterable, List, Optional, Sequence, Tuple
 
+from .muscle_model import MUSCLE_COEFFICIENTS, get_muscle_coefficients, normalize_exercise_id
 from .models import (
     DeloadRecommendation,
     ExercisePerformance,
@@ -23,24 +24,8 @@ from .models import (
 
 
 DEFAULT_EXERCISE_MUSCLE_MAP: Dict[str, MuscleMap] = {
-    "dumbbell bench press": {"chest": 1.0, "front_delts": 0.5, "triceps": 0.4},
-    "barbell bench press": {"chest": 1.0, "front_delts": 0.5, "triceps": 0.5},
-    "overhead press": {"front_delts": 1.0, "triceps": 0.6, "upper_chest": 0.3},
-    "pull-up": {"lats": 1.0, "biceps": 0.5, "rear_delts": 0.3},
-    "barbell row": {"mid_back": 1.0, "lats": 0.6, "biceps": 0.4, "rear_delts": 0.4},
-    "lat pulldown": {"lats": 1.0, "biceps": 0.4, "rear_delts": 0.3},
-    "squat": {"quads": 1.0, "glutes": 0.7, "hamstrings": 0.5, "core": 0.4},
-    "front squat": {"quads": 1.0, "glutes": 0.5, "core": 0.5},
-    "romanian deadlift": {"hamstrings": 1.0, "glutes": 0.8, "lower_back": 0.5},
-    "deadlift": {"hamstrings": 0.9, "glutes": 0.8, "lower_back": 1.0, "lats": 0.3},
-    "leg press": {"quads": 1.0, "glutes": 0.5, "hamstrings": 0.4},
-    "hip thrust": {"glutes": 1.0, "hamstrings": 0.4, "quads": 0.3},
-    "leg curl": {"hamstrings": 1.0, "calves": 0.3},
-    "biceps curl": {"biceps": 1.0, "forearms": 0.4},
-    "triceps pushdown": {"triceps": 1.0, "front_delts": 0.3},
-    "lateral raise": {"side_delts": 1.0, "upper_traps": 0.3},
-    "face pull": {"rear_delts": 1.0, "mid_back": 0.4, "rotator_cuff": 0.5},
-    "calf raise": {"calves": 1.0},
+    key.lower(): value.copy()
+    for key, value in MUSCLE_COEFFICIENTS.items()
 }
 
 
@@ -79,13 +64,22 @@ class TrainingAIEngine:
     def register_exercise(self, exercise_name: str, muscle_map: MuscleMap) -> None:
         self.exercise_muscle_map[exercise_name.lower()] = muscle_map
 
+    def _muscle_map_for_exercise(self, exercise_name: str) -> MuscleMap:
+        normalized_id = normalize_exercise_id(exercise_name)
+        if normalized_id in self.exercise_muscle_map:
+            return self.exercise_muscle_map[normalized_id]
+        raw_name = exercise_name.lower()
+        if raw_name in self.exercise_muscle_map:
+            return self.exercise_muscle_map[raw_name]
+        return get_muscle_coefficients(exercise_name)
+
     def calculate_exercise_load(self, performance: ExercisePerformance) -> WorkoutLoad:
         """
         Per-muscle load:
           load = weight * total_reps * muscle_coefficient
         """
         total_reps = sum(performance.rep_list())
-        muscle_map = self.exercise_muscle_map.get(performance.exercise.lower(), {})
+        muscle_map = self._muscle_map_for_exercise(performance.exercise)
         per_muscle: WorkoutLoad = {}
         for muscle, coefficient in muscle_map.items():
             per_muscle[muscle] = performance.weight * total_reps * coefficient
@@ -152,7 +146,7 @@ class TrainingAIEngine:
         per_muscle_load = self.calculate_workout_load(workout)
 
         for exercise in workout.exercises:
-            muscle_map = self.exercise_muscle_map.get(exercise.exercise.lower(), {})
+            muscle_map = self._muscle_map_for_exercise(exercise.exercise)
             if not muscle_map:
                 continue
             avg_rir = mean(exercise.rir_list()) if exercise.rir_list() else 3.0
@@ -204,7 +198,19 @@ class TrainingAIEngine:
         priority = self._muscle_priority_scores()
 
         if style == "full_body":
-            major = ["quads", "hamstrings", "glutes", "chest", "lats", "mid_back", "delts", "triceps", "biceps"]
+            major = [
+                "quads",
+                "hamstrings",
+                "glutes",
+                "chest",
+                "lats",
+                "mid_back",
+                "front_delts",
+                "side_delts",
+                "rear_delts",
+                "triceps",
+                "biceps",
+            ]
             major_sorted = sorted(major, key=lambda m: priority.get(m, 0.0), reverse=True)
             return [muscle for muscle in major_sorted if fatigue.get(muscle, 0.0) < 80.0][:6]
 

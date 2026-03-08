@@ -1,88 +1,156 @@
-export const EXERCISE_OPTIONS = [
-  { value: "barbell bench press", label: "Жим штанги лежа" },
-  { value: "dumbbell bench press", label: "Жим гантелей лежа" },
-  { value: "overhead press", label: "Жим над головой" },
-  { value: "pull-up", label: "Подтягивания" },
-  { value: "barbell row", label: "Тяга штанги в наклоне" },
-  { value: "lat pulldown", label: "Тяга верхнего блока" },
-  { value: "squat", label: "Приседания" },
-  { value: "front squat", label: "Фронтальные приседания" },
-  { value: "romanian deadlift", label: "Румынская тяга" },
-  { value: "deadlift", label: "Становая тяга" },
-  { value: "leg press", label: "Жим ногами" },
-  { value: "hip thrust", label: "Ягодичный мост" },
-  { value: "leg curl", label: "Сгибание ног" },
-  { value: "biceps curl", label: "Сгибание на бицепс" },
-  { value: "triceps pushdown", label: "Разгибание на блоке" },
-  { value: "lateral raise", label: "Подъемы в стороны" },
-  { value: "face pull", label: "Тяга к лицу" },
-  { value: "calf raise", label: "Подъемы на икры" }
+export const muscleDefinitions = [
+  { id: "chest", name: "Грудные мышцы" },
+  { id: "triceps", name: "Трицепсы" },
+  { id: "biceps", name: "Бицепсы" },
+  { id: "front_delts", name: "Передняя дельта" },
+  { id: "side_delts", name: "Средняя дельта" },
+  { id: "rear_delts", name: "Задняя дельта" },
+  { id: "lats", name: "Широчайшие мышцы спины" },
+  { id: "mid_back", name: "Средняя часть спины" },
+  { id: "traps", name: "Трапеции" },
+  { id: "spinal_erectors", name: "Разгибатели спины" },
+  { id: "quads", name: "Квадрицепсы" },
+  { id: "glutes", name: "Ягодичные мышцы" },
+  { id: "hamstrings", name: "Бицепс бедра" },
+  { id: "calves", name: "Икроножные мышцы" },
+  { id: "abs", name: "Мышцы пресса" },
 ];
 
-export const EXERCISE_LABELS = Object.fromEntries(EXERCISE_OPTIONS.map((item) => [item.value, item.label]));
+export const muscleDefinitionsMap = Object.fromEntries(
+  muscleDefinitions.map((muscle) => [muscle.id, muscle.name]),
+);
 
-export const MUSCLE_LABELS = {
-  chest: "Грудь",
-  upper_chest: "Верх груди",
-  front_delts: "Передняя дельта",
-  side_delts: "Средняя дельта",
-  rear_delts: "Задняя дельта",
-  triceps: "Трицепс",
-  biceps: "Бицепс",
-  forearms: "Предплечья",
-  lats: "Широчайшие",
-  mid_back: "Средняя спина",
-  lower_back: "Низ спины",
-  core: "Кор",
-  rotator_cuff: "Ротаторная манжета",
-  upper_traps: "Трапеции",
-  quads: "Квадрицепс",
-  hamstrings: "Задняя поверхность бедра",
-  glutes: "Ягодицы",
-  calves: "Икры"
+export const muscleCoefficients = {
+  bench_press: { chest: 1.0, triceps: 0.5, front_delts: 0.5 },
+  incline_bench_press: { chest: 1.0, front_delts: 0.6, triceps: 0.5 },
+  dumbbell_press: { chest: 1.0, triceps: 0.4, front_delts: 0.5 },
+  pushups: { chest: 1.0, triceps: 0.5, front_delts: 0.4 },
+  dips: { chest: 0.8, triceps: 1.0, front_delts: 0.4 },
+  overhead_press: { front_delts: 1.0, triceps: 0.7, side_delts: 0.4 },
+  pullups: { lats: 1.0, biceps: 0.6, mid_back: 0.5 },
+  lat_pulldown: { lats: 1.0, biceps: 0.5, mid_back: 0.4 },
+  barbell_row: { mid_back: 1.0, lats: 0.7, biceps: 0.5, spinal_erectors: 0.3 },
+  dumbbell_row: { lats: 1.0, mid_back: 0.6, biceps: 0.5 },
+  seated_row: { mid_back: 1.0, lats: 0.7, biceps: 0.5 },
+  face_pull: { rear_delts: 1.0, mid_back: 0.5, traps: 0.4 },
+  back_squat: { quads: 1.0, glutes: 0.7, hamstrings: 0.3, spinal_erectors: 0.3 },
+  front_squat: { quads: 1.0, glutes: 0.5, abs: 0.4, spinal_erectors: 0.3 },
+  leg_press: { quads: 1.0, glutes: 0.6, hamstrings: 0.4 },
+  romanian_deadlift: { hamstrings: 1.0, glutes: 0.8, spinal_erectors: 0.6 },
+  lunges: { quads: 1.0, glutes: 0.8, hamstrings: 0.4 },
+  leg_extension: { quads: 1.0 },
+  leg_curl: { hamstrings: 1.0 },
+  calf_raise: { calves: 1.0 },
+  lateral_raise: { side_delts: 1.0, traps: 0.3 },
+  rear_delt_fly: { rear_delts: 1.0, mid_back: 0.4, traps: 0.3 },
+  plank: { abs: 1.0, spinal_erectors: 0.5 },
+  hanging_leg_raise: { abs: 1.0 },
+  cable_crunch: { abs: 1.0 },
 };
 
-export const EXERCISE_MUSCLE_MAP = {
-  "dumbbell bench press": { chest: 1.0, front_delts: 0.5, triceps: 0.4 },
-  "barbell bench press": { chest: 1.0, front_delts: 0.5, triceps: 0.5 },
-  "overhead press": { front_delts: 1.0, triceps: 0.6, upper_chest: 0.3 },
-  "pull-up": { lats: 1.0, biceps: 0.5, rear_delts: 0.3 },
-  "barbell row": { mid_back: 1.0, lats: 0.6, biceps: 0.4, rear_delts: 0.4 },
-  "lat pulldown": { lats: 1.0, biceps: 0.4, rear_delts: 0.3 },
-  squat: { quads: 1.0, glutes: 0.7, hamstrings: 0.5, core: 0.4 },
-  "front squat": { quads: 1.0, glutes: 0.5, core: 0.5 },
-  "romanian deadlift": { hamstrings: 1.0, glutes: 0.8, lower_back: 0.5 },
-  deadlift: { hamstrings: 0.9, glutes: 0.8, lower_back: 1.0, lats: 0.3 },
-  "leg press": { quads: 1.0, glutes: 0.5, hamstrings: 0.4 },
-  "hip thrust": { glutes: 1.0, hamstrings: 0.4, quads: 0.3 },
-  "leg curl": { hamstrings: 1.0, calves: 0.3 },
-  "biceps curl": { biceps: 1.0, forearms: 0.4 },
-  "triceps pushdown": { triceps: 1.0, front_delts: 0.3 },
-  "lateral raise": { side_delts: 1.0, upper_traps: 0.3 },
-  "face pull": { rear_delts: 1.0, mid_back: 0.4, rotator_cuff: 0.5 },
-  "calf raise": { calves: 1.0 }
+export const exerciseDefinitions = {
+  bench_press: { id: "bench_press", name: "Жим штанги лёжа" },
+  incline_bench_press: { id: "incline_bench_press", name: "Жим на наклонной скамье" },
+  dumbbell_press: { id: "dumbbell_press", name: "Жим гантелей" },
+  pushups: { id: "pushups", name: "Отжимания" },
+  dips: { id: "dips", name: "Брусья" },
+  overhead_press: { id: "overhead_press", name: "Жим над головой" },
+  pullups: { id: "pullups", name: "Подтягивания" },
+  lat_pulldown: { id: "lat_pulldown", name: "Тяга верхнего блока" },
+  barbell_row: { id: "barbell_row", name: "Тяга штанги в наклоне" },
+  dumbbell_row: { id: "dumbbell_row", name: "Тяга гантели в наклоне" },
+  seated_row: { id: "seated_row", name: "Горизонтальная тяга блока" },
+  face_pull: { id: "face_pull", name: "Тяга к лицу" },
+  back_squat: { id: "back_squat", name: "Приседания со штангой" },
+  front_squat: { id: "front_squat", name: "Фронтальные приседания" },
+  leg_press: { id: "leg_press", name: "Жим ногами" },
+  romanian_deadlift: { id: "romanian_deadlift", name: "Румынская тяга" },
+  lunges: { id: "lunges", name: "Выпады" },
+  leg_extension: { id: "leg_extension", name: "Разгибания ног" },
+  leg_curl: { id: "leg_curl", name: "Сгибания ног" },
+  calf_raise: { id: "calf_raise", name: "Подъёмы на икры" },
+  lateral_raise: { id: "lateral_raise", name: "Махи в стороны" },
+  rear_delt_fly: { id: "rear_delt_fly", name: "Разведения на заднюю дельту" },
+  plank: { id: "plank", name: "Планка" },
+  hanging_leg_raise: { id: "hanging_leg_raise", name: "Подъёмы ног в висе" },
+  cable_crunch: { id: "cable_crunch", name: "Скручивания на блоке" },
 };
+
+const exerciseAliases = {
+  "barbell bench press": "bench_press",
+  "bench press": "bench_press",
+  "incline bench press": "incline_bench_press",
+  "dumbbell bench press": "dumbbell_press",
+  "dumbbell press": "dumbbell_press",
+  "overhead press": "overhead_press",
+  "pull-up": "pullups",
+  "lat pulldown": "lat_pulldown",
+  "barbell row": "barbell_row",
+  "dumbbell row": "dumbbell_row",
+  "seated cable row": "seated_row",
+  "face pull": "face_pull",
+  squat: "back_squat",
+  "back squat": "back_squat",
+  "front squat": "front_squat",
+  "leg press": "leg_press",
+  "romanian deadlift": "romanian_deadlift",
+  "leg extension": "leg_extension",
+  "leg curl": "leg_curl",
+  "calf raise": "calf_raise",
+  "lateral raise": "lateral_raise",
+  "rear delt fly": "rear_delt_fly",
+  plank: "plank",
+  "hanging leg raise": "hanging_leg_raise",
+  "cable crunch": "cable_crunch",
+};
+
+export function normalizeExerciseId(exerciseId) {
+  const normalized = String(exerciseId ?? "").trim().toLowerCase();
+  return exerciseAliases[normalized] ?? normalized;
+}
+
+export function getMuscleCoefficients(exerciseId) {
+  const normalized = normalizeExerciseId(exerciseId);
+  return { ...(muscleCoefficients[normalized] ?? {}) };
+}
+
+export const EXERCISE_OPTIONS = Object.values(exerciseDefinitions).map((exercise) => ({
+  value: exercise.id,
+  label: exercise.name,
+}));
+
+export const EXERCISE_LABELS = Object.fromEntries(
+  Object.values(exerciseDefinitions).map((item) => [item.id, item.name]),
+);
 
 export const ZONE_DEFINITIONS = [
-  { id: "chest_zone", label: "Грудь", view: "front", x: 50, y: 27, muscles: ["chest", "upper_chest"] },
+  { id: "chest_zone", label: "Грудь", view: "front", x: 50, y: 27, muscles: ["chest"] },
   { id: "shoulders_front_zone", label: "Плечи", view: "front", x: 50, y: 18, muscles: ["front_delts", "side_delts"] },
-  { id: "arms_front_zone", label: "Руки", view: "front", x: 50, y: 41, muscles: ["biceps", "triceps", "forearms"] },
-  { id: "core_zone", label: "Кор", view: "front", x: 50, y: 52, muscles: ["core"] },
+  { id: "arms_front_zone", label: "Руки", view: "front", x: 50, y: 41, muscles: ["biceps", "triceps"] },
+  { id: "core_zone", label: "Пресс", view: "front", x: 50, y: 52, muscles: ["abs"] },
   { id: "quads_zone", label: "Квадрицепсы", view: "front", x: 50, y: 70, muscles: ["quads"] },
   { id: "calves_zone", label: "Икры", view: "front", x: 50, y: 88, muscles: ["calves"] },
-  { id: "back_zone", label: "Спина", view: "back", x: 50, y: 31, muscles: ["lats", "mid_back", "lower_back"] },
-  { id: "shoulders_back_zone", label: "Задняя дельта", view: "back", x: 50, y: 18, muscles: ["rear_delts", "upper_traps"] },
+  {
+    id: "back_zone",
+    label: "Спина",
+    view: "back",
+    x: 50,
+    y: 31,
+    muscles: ["lats", "mid_back", "traps", "spinal_erectors"],
+  },
+  { id: "shoulders_back_zone", label: "Задняя дельта", view: "back", x: 50, y: 18, muscles: ["rear_delts"] },
   { id: "glutes_zone", label: "Ягодицы", view: "back", x: 50, y: 58, muscles: ["glutes"] },
   { id: "hamstrings_zone", label: "Бицепс бедра", view: "back", x: 50, y: 72, muscles: ["hamstrings"] },
-  { id: "calves_back_zone", label: "Икры", view: "back", x: 50, y: 88, muscles: ["calves"] }
+  { id: "calves_back_zone", label: "Икры", view: "back", x: 50, y: 88, muscles: ["calves"] },
 ];
 
 export function translateExercise(value) {
-  return EXERCISE_LABELS[value] ?? value;
+  const normalized = normalizeExerciseId(value);
+  return EXERCISE_LABELS[normalized] ?? value;
 }
 
 export function translateMuscle(value) {
-  return MUSCLE_LABELS[value] ?? value;
+  return muscleDefinitionsMap[value] ?? value;
 }
 
 function safeNumber(value, fallback = 0) {
@@ -93,9 +161,8 @@ function safeNumber(value, fallback = 0) {
 export function calculateSessionMuscleLoad(exercises) {
   const loads = {};
   for (const exercise of exercises) {
-    const exerciseName = exercise.exercise?.toLowerCase?.() ?? "";
-    const map = EXERCISE_MUSCLE_MAP[exerciseName];
-    if (!map) continue;
+    const map = getMuscleCoefficients(exercise.exercise);
+    if (Object.keys(map).length === 0) continue;
 
     const weight = safeNumber(exercise.weight, 0);
     const totalReps = (exercise.sets ?? []).reduce((acc, setItem) => acc + safeNumber(setItem.reps, 0), 0);
