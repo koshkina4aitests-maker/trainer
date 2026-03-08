@@ -4,3 +4,6 @@ sqlalchemy
 psycopg[binary]
 pydantic-settings
 httpx
+python-jose[cryptography]
+passlib
+google-auth

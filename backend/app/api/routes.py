@@ -4,13 +4,20 @@ from dataclasses import asdict
 from typing import Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
+from app.core.security import create_access_token, get_current_account, get_password_hash, verify_password
 from app.db import models
 from app.db.session import get_db
 from app.schemas import (
     AnalysisResponse,
+    AuthTokenResponse,
+    AuthUserRead,
+    GoogleLoginRequest,
+    LoginRequest,
+    RegisterRequest,
     RecommendedWorkoutResponse,
     UserCreate,
     UserRead,
@@ -19,9 +26,110 @@ from app.schemas import (
 )
 from app.services.ai_analysis import AIAnalysisService
 from app.services.engine_service import build_engine_for_user, split_goals
+from app.services.google_oauth import verify_google_id_token
 
 
 router = APIRouter()
+
+
+def _normalize_email(email: str) -> str:
+    return email.strip().lower()
+
+
+def _account_to_read(account: models.Account) -> AuthUserRead:
+    return AuthUserRead(
+        id=account.id,
+        email=account.email,
+        full_name=account.full_name,
+        auth_provider=account.auth_provider,
+        created_at=account.created_at,
+    )
+
+
+def _token_response_for_account(account: models.Account) -> AuthTokenResponse:
+    settings = get_settings()
+    token = create_access_token(str(account.id))
+    return AuthTokenResponse(
+        access_token=token,
+        expires_in=settings.access_token_expire_minutes * 60,
+        user=_account_to_read(account),
+    )
+
+
+@router.post("/auth/register", response_model=AuthTokenResponse, tags=["auth"])
+def register(payload: RegisterRequest, db: Session = Depends(get_db)) -> AuthTokenResponse:
+    email = _normalize_email(payload.email)
+    existing = db.scalar(select(models.Account).where(models.Account.email == email))
+    if existing is not None:
+        raise HTTPException(status_code=400, detail="Account with this email already exists")
+
+    account = models.Account(
+        email=email,
+        password_hash=get_password_hash(payload.password),
+        full_name=(payload.full_name or "").strip() or None,
+        auth_provider="local",
+    )
+    db.add(account)
+    db.commit()
+    db.refresh(account)
+    return _token_response_for_account(account)
+
+
+@router.post("/auth/login", response_model=AuthTokenResponse, tags=["auth"])
+def login(payload: LoginRequest, db: Session = Depends(get_db)) -> AuthTokenResponse:
+    email = _normalize_email(payload.email)
+    account = db.scalar(select(models.Account).where(models.Account.email == email))
+    if account is None or not account.password_hash:
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    if not verify_password(payload.password, account.password_hash):
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    return _token_response_for_account(account)
+
+
+@router.post("/auth/google", response_model=AuthTokenResponse, tags=["auth"])
+def google_login(payload: GoogleLoginRequest, db: Session = Depends(get_db)) -> AuthTokenResponse:
+    settings = get_settings()
+    if not settings.google_client_id:
+        raise HTTPException(status_code=503, detail="Google OAuth is not configured on backend")
+
+    try:
+        claims = verify_google_id_token(payload.id_token, settings.google_client_id)
+    except Exception as exc:
+        raise HTTPException(status_code=401, detail="Invalid Google token") from exc
+
+    google_sub = str(claims.get("sub") or "").strip()
+    email = _normalize_email(str(claims.get("email") or ""))
+    full_name = str(claims.get("name") or "").strip() or None
+    if not google_sub or not email:
+        raise HTTPException(status_code=400, detail="Google token does not contain required claims")
+
+    account = db.scalar(select(models.Account).where(models.Account.google_sub == google_sub))
+    if account is None:
+        account = db.scalar(select(models.Account).where(models.Account.email == email))
+
+    if account is None:
+        account = models.Account(
+            email=email,
+            full_name=full_name,
+            google_sub=google_sub,
+            auth_provider="google",
+        )
+        db.add(account)
+    else:
+        account.google_sub = google_sub
+        if not account.full_name and full_name:
+            account.full_name = full_name
+        if account.auth_provider == "local":
+            account.auth_provider = "google"
+
+    db.commit()
+    db.refresh(account)
+    return _token_response_for_account(account)
+
+
+@router.get("/auth/me", response_model=AuthUserRead, tags=["auth"])
+def me(current_account: models.Account = Depends(get_current_account)) -> AuthUserRead:
+    return _account_to_read(current_account)
 
 
 @router.post("/users", response_model=UserRead, tags=["users"])

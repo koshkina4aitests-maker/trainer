@@ -97,3 +97,33 @@ class AnalysisResponse(BaseModel):
     imbalances: List[Dict[str, Any]]
     progress_snapshot: Dict[str, Any]
     body_visualization: Dict[str, Dict[str, Any]]
+
+
+class AuthUserRead(BaseModel):
+    id: int
+    email: str
+    full_name: Optional[str] = None
+    auth_provider: str
+    created_at: datetime
+
+
+class RegisterRequest(BaseModel):
+    email: str = Field(..., min_length=5, max_length=255)
+    password: str = Field(..., min_length=8, max_length=128)
+    full_name: Optional[str] = Field(default=None, max_length=255)
+
+
+class LoginRequest(BaseModel):
+    email: str = Field(..., min_length=5, max_length=255)
+    password: str = Field(..., min_length=8, max_length=128)
+
+
+class GoogleLoginRequest(BaseModel):
+    id_token: str = Field(..., min_length=20)
+
+
+class AuthTokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    expires_in: int
+    user: AuthUserRead

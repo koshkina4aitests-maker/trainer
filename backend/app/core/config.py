@@ -17,6 +17,12 @@ class Settings(BaseSettings):
     ai_model: str = "gpt-4.1-mini"
     ai_base_url: str = "https://api.openai.com/v1"
 
+    jwt_secret_key: str = "change-this-in-production"
+    jwt_algorithm: str = "HS256"
+    access_token_expire_minutes: int = 60 * 24 * 7
+
+    google_client_id: str = ""
+
     cors_origins: List[str] = Field(default_factory=lambda: ["http://localhost:5173"])
 
 

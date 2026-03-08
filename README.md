@@ -65,6 +65,10 @@ tests/
 Base URL: `http://localhost:8000`
 
 Endpoints:
+- `POST /auth/register`
+- `POST /auth/login`
+- `POST /auth/google`
+- `GET /auth/me`
 - `POST /users`
 - `POST /workouts`
 - `GET /recommended-workout?user_id=<id>`
@@ -106,6 +110,32 @@ React app pages:
 - Body muscle visualization
 
 The frontend calls the same backend API that mobile clients can use later.
+
+## Authentication
+
+Supported methods:
+- local email/password
+- Google OAuth (ID token exchange)
+
+Frontend:
+- `VITE_GOOGLE_CLIENT_ID` in `frontend/.env`
+
+Backend:
+- `GOOGLE_CLIENT_ID`, `JWT_SECRET_KEY`, `JWT_ALGORITHM`, `ACCESS_TOKEN_EXPIRE_MINUTES` in `backend/.env`
+
+### Google OAuth setup checklist
+
+1. Open Google Cloud Console.
+2. Create/select project.
+3. Configure **OAuth consent screen** (app name + test users).
+4. Create OAuth 2.0 Client ID (**Web application**).
+5. Add authorized origin:
+   - `http://localhost:5173`
+6. (Optional) Add redirect URI:
+   - `http://localhost:5173`
+7. Put created client id into:
+   - `frontend/.env` -> `VITE_GOOGLE_CLIENT_ID=...`
+   - `backend/.env` -> `GOOGLE_CLIENT_ID=...`
 
 ## Run locally
 

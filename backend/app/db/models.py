@@ -28,6 +28,18 @@ class User(Base):
     )
 
 
+class Account(Base):
+    __tablename__ = "accounts"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
+    password_hash: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    google_sub: Mapped[Optional[str]] = mapped_column(String(255), unique=True, nullable=True)
+    full_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    auth_provider: Mapped[str] = mapped_column(String(32), nullable=False, default="local")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+
+
 class Workout(Base):
     __tablename__ = "workouts"
 
