@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict
+from datetime import UTC, datetime
 from typing import Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -17,6 +18,8 @@ from app.schemas import (
     AuthUserRead,
     GoogleLoginRequest,
     LoginRequest,
+    ProfileResponse,
+    ProfileUpdateRequest,
     RegisterRequest,
     RecommendedWorkoutResponse,
     UserCreate,
@@ -54,6 +57,40 @@ def _token_response_for_account(account: models.Account) -> AuthTokenResponse:
         expires_in=settings.access_token_expire_minutes * 60,
         user=_account_to_read(account),
     )
+
+
+def _get_or_create_profile(db: Session, account: models.Account) -> models.AccountProfile:
+    profile = db.scalar(select(models.AccountProfile).where(models.AccountProfile.account_id == account.id))
+    if profile is None:
+        profile = models.AccountProfile(account_id=account.id)
+        db.add(profile)
+        db.commit()
+        db.refresh(profile)
+    return profile
+
+
+def _profile_completion_pct(profile: models.AccountProfile, account: models.Account) -> int:
+    fields = [
+        bool(account.full_name),
+        profile.age is not None,
+        bool(profile.training_style),
+        profile.workouts_per_week is not None,
+        bool(profile.goal),
+        profile.height_cm is not None,
+        profile.weight_kg is not None,
+        profile.target_weight_kg is not None,
+        profile.body_fat_pct is not None,
+        bool(profile.experience_level),
+        profile.preferred_session_duration_min is not None,
+        bool(profile.notes),
+    ]
+    completed = sum(1 for item in fields if item)
+    return round(completed / len(fields) * 100)
+
+
+def _days_since_account_created(created_at: datetime) -> int:
+    reference = created_at.replace(tzinfo=UTC) if created_at.tzinfo is None else created_at.astimezone(UTC)
+    return max(1, (datetime.now(UTC) - reference).days + 1)
 
 
 @router.post("/auth/register", response_model=AuthTokenResponse, tags=["auth"])
@@ -130,6 +167,76 @@ def google_login(payload: GoogleLoginRequest, db: Session = Depends(get_db)) -> 
 @router.get("/auth/me", response_model=AuthUserRead, tags=["auth"])
 def me(current_account: models.Account = Depends(get_current_account)) -> AuthUserRead:
     return _account_to_read(current_account)
+
+
+@router.get("/profile/me", response_model=ProfileResponse, tags=["profile"])
+def get_profile_me(
+    db: Session = Depends(get_db),
+    current_account: models.Account = Depends(get_current_account),
+) -> ProfileResponse:
+    profile = _get_or_create_profile(db, current_account)
+    days_in_app = _days_since_account_created(current_account.created_at)
+    return ProfileResponse(
+        account_id=current_account.id,
+        email=current_account.email,
+        full_name=current_account.full_name,
+        age=profile.age,
+        training_style=profile.training_style,  # type: ignore[arg-type]
+        workouts_per_week=profile.workouts_per_week,
+        goal=profile.goal,  # type: ignore[arg-type]
+        height_cm=profile.height_cm,
+        weight_kg=profile.weight_kg,
+        target_weight_kg=profile.target_weight_kg,
+        body_fat_pct=profile.body_fat_pct,
+        experience_level=profile.experience_level,  # type: ignore[arg-type]
+        preferred_session_duration_min=profile.preferred_session_duration_min,
+        notes=profile.notes,
+        profile_completion_pct=_profile_completion_pct(profile, current_account),
+        days_in_app=days_in_app,
+    )
+
+
+@router.put("/profile/me", response_model=ProfileResponse, tags=["profile"])
+def update_profile_me(
+    payload: ProfileUpdateRequest,
+    db: Session = Depends(get_db),
+    current_account: models.Account = Depends(get_current_account),
+) -> ProfileResponse:
+    profile = _get_or_create_profile(db, current_account)
+    current_account.full_name = (payload.full_name or "").strip() or None
+    profile.age = payload.age
+    profile.training_style = payload.training_style
+    profile.workouts_per_week = payload.workouts_per_week
+    profile.goal = payload.goal
+    profile.height_cm = payload.height_cm
+    profile.weight_kg = payload.weight_kg
+    profile.target_weight_kg = payload.target_weight_kg
+    profile.body_fat_pct = payload.body_fat_pct
+    profile.experience_level = payload.experience_level
+    profile.preferred_session_duration_min = payload.preferred_session_duration_min
+    profile.notes = (payload.notes or "").strip() or None
+    db.commit()
+    db.refresh(current_account)
+    db.refresh(profile)
+    days_in_app = _days_since_account_created(current_account.created_at)
+    return ProfileResponse(
+        account_id=current_account.id,
+        email=current_account.email,
+        full_name=current_account.full_name,
+        age=profile.age,
+        training_style=profile.training_style,  # type: ignore[arg-type]
+        workouts_per_week=profile.workouts_per_week,
+        goal=profile.goal,  # type: ignore[arg-type]
+        height_cm=profile.height_cm,
+        weight_kg=profile.weight_kg,
+        target_weight_kg=profile.target_weight_kg,
+        body_fat_pct=profile.body_fat_pct,
+        experience_level=profile.experience_level,  # type: ignore[arg-type]
+        preferred_session_duration_min=profile.preferred_session_duration_min,
+        notes=profile.notes,
+        profile_completion_pct=_profile_completion_pct(profile, current_account),
+        days_in_app=days_in_app,
+    )
 
 
 @router.post("/users", response_model=UserRead, tags=["users"])

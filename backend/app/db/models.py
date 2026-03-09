@@ -39,6 +39,38 @@ class Account(Base):
     auth_provider: Mapped[str] = mapped_column(String(32), nullable=False, default="local")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
+    profile: Mapped[Optional["AccountProfile"]] = relationship(
+        back_populates="account",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )
+
+
+class AccountProfile(Base):
+    __tablename__ = "account_profiles"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    account_id: Mapped[int] = mapped_column(ForeignKey("accounts.id", ondelete="CASCADE"), unique=True, nullable=False)
+    age: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    training_style: Mapped[str] = mapped_column(String(32), nullable=False, default="split")
+    workouts_per_week: Mapped[int] = mapped_column(Integer, nullable=False, default=3)
+    goal: Mapped[str] = mapped_column(String(64), nullable=False, default="hypertrophy")
+    height_cm: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    weight_kg: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    target_weight_kg: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    body_fat_pct: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    experience_level: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
+    preferred_session_duration_min: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+    )
+
+    account: Mapped["Account"] = relationship(back_populates="profile")
+
 
 class Workout(Base):
     __tablename__ = "workouts"

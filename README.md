@@ -69,6 +69,8 @@ Endpoints:
 - `POST /auth/login`
 - `POST /auth/google`
 - `GET /auth/me`
+- `GET /profile/me`
+- `PUT /profile/me`
 - `POST /users`
 - `POST /workouts`
 - `GET /recommended-workout?user_id=<id>`
@@ -103,6 +105,7 @@ These are ready extension points for production auth/data-sync flows.
 ## Web UI (v1)
 
 React app pages:
+- Personal profile (after auth)
 - Dashboard
 - Today's workout
 - Workout session

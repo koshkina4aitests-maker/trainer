@@ -127,3 +127,42 @@ class AuthTokenResponse(BaseModel):
     token_type: str = "bearer"
     expires_in: int
     user: AuthUserRead
+
+
+TrainingStyleProfile = Literal["split", "fullbody", "other"]
+GoalProfile = Literal["strength", "hypertrophy", "endurance", "health", "weight_loss"]
+ExperienceLevel = Literal["beginner", "intermediate", "advanced"]
+
+
+class ProfileUpdateRequest(BaseModel):
+    full_name: Optional[str] = Field(default=None, max_length=255)
+    age: Optional[int] = Field(default=None, ge=13, le=100)
+    training_style: TrainingStyleProfile = "split"
+    workouts_per_week: int = Field(default=3, ge=1, le=14)
+    goal: GoalProfile = "hypertrophy"
+    height_cm: Optional[float] = Field(default=None, ge=120, le=250)
+    weight_kg: Optional[float] = Field(default=None, ge=30, le=400)
+    target_weight_kg: Optional[float] = Field(default=None, ge=30, le=400)
+    body_fat_pct: Optional[float] = Field(default=None, ge=2, le=70)
+    experience_level: Optional[ExperienceLevel] = None
+    preferred_session_duration_min: Optional[int] = Field(default=None, ge=20, le=240)
+    notes: Optional[str] = Field(default=None, max_length=2000)
+
+
+class ProfileResponse(BaseModel):
+    account_id: int
+    email: str
+    full_name: Optional[str] = None
+    age: Optional[int] = None
+    training_style: TrainingStyleProfile
+    workouts_per_week: int
+    goal: GoalProfile
+    height_cm: Optional[float] = None
+    weight_kg: Optional[float] = None
+    target_weight_kg: Optional[float] = None
+    body_fat_pct: Optional[float] = None
+    experience_level: Optional[ExperienceLevel] = None
+    preferred_session_duration_min: Optional[int] = None
+    notes: Optional[str] = None
+    profile_completion_pct: int
+    days_in_app: int

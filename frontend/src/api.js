@@ -67,4 +67,16 @@ export async function getAuthMe(authToken) {
   });
 }
 
+export async function getMyProfile(authToken) {
+  return request("/profile/me", { authToken });
+}
+
+export async function updateMyProfile(authToken, payload) {
+  return request("/profile/me", {
+    method: "PUT",
+    authToken,
+    body: JSON.stringify(payload),
+  });
+}
+
 export { API_URL };

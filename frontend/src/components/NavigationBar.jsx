@@ -5,6 +5,11 @@ import { Button } from "./ui/button";
 
 const links = [
   {
+    to: "/profile",
+    label: "Личный кабинет",
+    icon: UserRound,
+  },
+  {
     to: "/workout",
     label: "Текущая тренировка",
     icon: Dumbbell,
