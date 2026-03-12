@@ -10,9 +10,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
 import {
   exerciseDefinitions,
   getMuscleCoefficients,
+  getTechniqueTip,
   translateExercise,
   translateMuscle,
 } from "../utils/trainingModel";
+import { assessCurrentWorkoutHeaviness, suggestWorkoutFromHistory } from "../utils/trainingPlanner";
 
 const DEFAULT_SET_PRESETS = {
   bench_press: { weight: 20, reps: 10, rir: 2 },
@@ -77,6 +79,7 @@ function ExerciseCard({ exercise, canDelete, onToggleSet, onChangeSet, onAddSet,
     .filter(([, coefficient]) => coefficient < 0.9)
     .slice(0, 3)
     .map(([muscleId]) => translateMuscle(muscleId));
+  const techniqueTip = getTechniqueTip(exercise.kind);
   const completedCount = exercise.sets.filter((setItem) => setItem.completed).length;
 
   return (
@@ -95,6 +98,9 @@ function ExerciseCard({ exercise, canDelete, onToggleSet, onChangeSet, onAddSet,
                 Вторичные: {(secondary.length > 0 ? secondary : ["—"]).join(", ")}
               </Badge>
             </div>
+            <p className="max-w-3xl text-sm text-slate-600">
+              <span className="font-semibold">Подсказка по технике:</span> {techniqueTip}
+            </p>
           </div>
           <div className="flex items-center gap-2 pt-1">
             <span className="text-sm font-semibold text-slate-600">
@@ -214,9 +220,10 @@ function buildMuscleLoads(exercises) {
     .sort((a, b) => b[1] - a[1]);
 }
 
-export default function WorkoutDiaryPage({ onSaveWorkout }) {
+export default function WorkoutDiaryPage({ onSaveWorkout, savedWorkouts = [] }) {
   const [exercises, setExercises] = useState(initialExercises);
   const [exerciseToAdd, setExerciseToAdd] = useState("bench_press");
+  const [suggestedType, setSuggestedType] = useState("fullbody");
   const [workoutTitle, setWorkoutTitle] = useState("Силовая тренировка");
   const [saveMessage, setSaveMessage] = useState("");
 
@@ -237,6 +244,14 @@ export default function WorkoutDiaryPage({ onSaveWorkout }) {
 
   const muscleLoads = useMemo(() => buildMuscleLoads(exercises), [exercises]);
   const maxLoad = muscleLoads[0]?.[1] || 1;
+  const suggestedWorkout = useMemo(
+    () => suggestWorkoutFromHistory(savedWorkouts, suggestedType),
+    [savedWorkouts, suggestedType],
+  );
+  const heavinessAssessment = useMemo(
+    () => assessCurrentWorkoutHeaviness(exercises, savedWorkouts),
+    [exercises, savedWorkouts],
+  );
 
   function toggleSetCompleted(exerciseId, setIndex) {
     setExercises((prev) =>
@@ -296,6 +311,19 @@ export default function WorkoutDiaryPage({ onSaveWorkout }) {
     setExercises((prev) => [...prev, createExercise(exerciseToAdd, 2)]);
   }
 
+  function applySuggestedWorkout() {
+    const nextExercises = suggestedWorkout.suggestedExercises.map((item) => ({
+      id: crypto.randomUUID(),
+      kind: item.exerciseId,
+      targetSets: item.sets,
+      sets: Array.from({ length: item.sets }, () =>
+        createSet(item.targetWeight, item.reps, item.targetRir, false),
+      ),
+    }));
+    setExercises(nextExercises);
+    setWorkoutTitle(suggestedWorkout.title);
+  }
+
   function createWorkoutSnapshot() {
     const totalLoad = exercises.reduce(
       (acc, exercise) =>
@@ -316,6 +344,12 @@ export default function WorkoutDiaryPage({ onSaveWorkout }) {
         setsCount: exercise.sets.length,
         completedSets: exercise.sets.filter((setItem) => setItem.completed).length,
         load: Math.round(exercise.sets.reduce((acc, setItem) => acc + setLoad(setItem), 0)),
+        sets: exercise.sets.map((setItem) => ({
+          weight: Number(setItem.weight),
+          reps: Number(setItem.reps),
+          rir: Number(setItem.rir),
+          completed: Boolean(setItem.completed),
+        })),
       })),
       muscleLoads: muscleLoads.map(([muscle, load]) => ({
         muscle: translateMuscle(muscle),
@@ -413,6 +447,66 @@ export default function WorkoutDiaryPage({ onSaveWorkout }) {
             </div>
           </CardContent>
         </Card>
+
+        <Card className="rounded-2xl">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xl text-slate-900">Предложение тренировки на базе предыдущих</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex flex-col gap-2 md:flex-row md:items-center">
+              <select
+                value={suggestedType}
+                onChange={(event) => setSuggestedType(event.target.value)}
+                className="h-10 min-w-[220px] rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-sm outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="split_upper">split верх</option>
+                <option value="split_lower">split низ</option>
+                <option value="fullbody">fullbody</option>
+              </select>
+              <Button variant="outline" className="h-10" onClick={applySuggestedWorkout}>
+                Применить предложение
+              </Button>
+            </div>
+
+            <ul className="list-disc space-y-1 pl-5 text-sm text-slate-600">
+              {suggestedWorkout.principles.map((rule) => (
+                <li key={rule}>{rule}</li>
+              ))}
+            </ul>
+
+            <div className="grid gap-2 md:grid-cols-2">
+              {suggestedWorkout.suggestedExercises.map((item) => (
+                <div key={item.exerciseId} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                  <p className="font-semibold text-slate-800">{item.name}</p>
+                  <p className="text-sm text-slate-600">
+                    {item.sets}×{item.reps} · вес {item.targetWeight} кг · целевой RIR {item.targetRir}
+                  </p>
+                  <p className="text-xs text-slate-500">Оценка 1ПМ: {item.estimatedOneRepMax} кг</p>
+                  <p className="mt-1 text-xs text-slate-500">{item.progressionNote}</p>
+                  <p className="mt-1 text-xs text-slate-600">
+                    <span className="font-medium">Техника:</span> {item.techniqueTip}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {heavinessAssessment.warnings.length > 0 && (
+          <Card className="rounded-2xl border-amber-200 bg-amber-50">
+            <CardContent className="space-y-2 p-4">
+              <p className="text-sm font-semibold text-amber-800">
+                Обнаружены признаки слишком тяжёлой программы
+              </p>
+              <ul className="list-disc space-y-1 pl-5 text-sm text-amber-800">
+                {heavinessAssessment.warnings.map((warning) => (
+                  <li key={warning}>{warning}</li>
+                ))}
+              </ul>
+              <p className="text-sm font-medium text-amber-900">{heavinessAssessment.recommendation}</p>
+            </CardContent>
+          </Card>
+        )}
 
         {saveMessage && (
           <Card className="rounded-2xl border-emerald-200 bg-emerald-50">

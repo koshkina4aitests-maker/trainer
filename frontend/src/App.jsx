@@ -47,7 +47,10 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Navigate to="/profile" replace />} />
         <Route path="/profile" element={<UserProfilePage authToken={authSession.access_token} />} />
-        <Route path="/workout" element={<WorkoutDiaryPage onSaveWorkout={handleSaveWorkout} />} />
+        <Route
+          path="/workout"
+          element={<WorkoutDiaryPage onSaveWorkout={handleSaveWorkout} savedWorkouts={savedWorkouts} />}
+        />
         <Route path="/history" element={<WorkoutHistoryPage savedWorkouts={savedWorkouts} />} />
       </Routes>
     </div>

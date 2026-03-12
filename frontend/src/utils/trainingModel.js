@@ -76,6 +76,34 @@ export const exerciseDefinitions = {
   cable_crunch: { id: "cable_crunch", name: "Скручивания на блоке" },
 };
 
+export const exerciseTechniqueTips = {
+  bench_press: "Сведите лопатки, упирайтесь ногами в пол, контролируйте опускание штанги к середине груди.",
+  incline_bench_press: "Сохраняйте стабильный прогиб и не поднимайте плечи к ушам в верхней точке.",
+  dumbbell_press: "Держите нейтральные запястья и опускайте гантели до комфортной глубины без рывка.",
+  pushups: "Сохраняйте прямую линию корпуса и контролируйте движение лопаток.",
+  dips: "Опускайтесь до комфортной глубины, держите локти под контролем, без провала плеч.",
+  overhead_press: "Сожмите ягодицы и пресс, чтобы не переразгибать поясницу.",
+  pullups: "Начинайте движение со сведения лопаток, избегайте рывков корпусом.",
+  lat_pulldown: "Тяните локтями вниз и назад, не заваливайте корпус сильно назад.",
+  barbell_row: "Держите спину нейтральной, тяните к нижней части живота.",
+  dumbbell_row: "Фиксируйте корпус, поднимайте локоть по дуге к тазу.",
+  seated_row: "Сохраняйте грудь раскрытой и не округляйте поясницу.",
+  face_pull: "Тяните к верхней части лица, локти ведите в стороны.",
+  back_squat: "Следите за нейтральной спиной и траекторией коленей по линии носков.",
+  front_squat: "Локти держите высоко, корпус — максимально вертикально.",
+  leg_press: "Не отрывайте таз от спинки и не запирайте колени вверху.",
+  romanian_deadlift: "Двигайтесь от таза назад, сохраняйте лёгкий сгиб коленей.",
+  lunges: "Ставьте шаг достаточной длины, чтобы колено не заваливалось внутрь.",
+  leg_extension: "Контролируйте эксцентрику и не бросайте вес внизу.",
+  leg_curl: "Не поднимайте таз, концентрируйтесь на сгибании за счёт бицепса бедра.",
+  calf_raise: "Делайте паузу внизу и вверху для полного диапазона.",
+  lateral_raise: "Поднимайте руки в плоскости лопатки, без раскачки корпусом.",
+  rear_delt_fly: "Держите локти слегка согнутыми и двигайтесь от плеча, не от кисти.",
+  plank: "Держите таз нейтрально и сохраняйте постоянное напряжение пресса.",
+  hanging_leg_raise: "Подкручивайте таз в верхней точке, а не просто поднимайте ноги.",
+  cable_crunch: "Скручивайтесь за счёт пресса, не тяните вес руками.",
+};
+
 const exerciseAliases = {
   "barbell bench press": "bench_press",
   "bench press": "bench_press",
@@ -112,6 +140,11 @@ export function normalizeExerciseId(exerciseId) {
 export function getMuscleCoefficients(exerciseId) {
   const normalized = normalizeExerciseId(exerciseId);
   return { ...(muscleCoefficients[normalized] ?? {}) };
+}
+
+export function getTechniqueTip(exerciseId) {
+  const normalized = normalizeExerciseId(exerciseId);
+  return exerciseTechniqueTips[normalized] ?? "Сохраняйте контроль техники и работайте в полном комфортном диапазоне.";
 }
 
 export const EXERCISE_OPTIONS = Object.values(exerciseDefinitions).map((exercise) => ({
