@@ -24,7 +24,7 @@ const DEFAULT_SET_PRESETS = {
 
 function createSet(weight = 20, reps = 10, rir = 2, completed = false) {
   return {
-    id: crypto.randomUUID(),
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2),
     weight,
     reps,
     rir,
@@ -35,7 +35,7 @@ function createSet(weight = 20, reps = 10, rir = 2, completed = false) {
 function createExercise(kind, targetSets = 2) {
   const preset = DEFAULT_SET_PRESETS[kind] ?? { weight: 20, reps: 10, rir: 2 };
   return {
-    id: crypto.randomUUID(),
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2),
     kind,
     targetSets,
     sets: Array.from({ length: targetSets }, () =>
@@ -575,7 +575,7 @@ export default function WorkoutDiaryPage({ authToken, onSaveWorkout, savedWorkou
     );
 
     return {
-      id: crypto.randomUUID(),
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2),
       title: workoutTitle.trim() || "Тренировка",
       savedAt: new Date().toISOString(),
       durationMinutes: Math.max(20, totals.totalPlannedSets * 2),
