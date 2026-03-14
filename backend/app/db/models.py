@@ -72,6 +72,22 @@ class AccountProfile(Base):
     account: Mapped["Account"] = relationship(back_populates="profile")
 
 
+class CustomExercise(Base):
+    __tablename__ = "custom_exercises"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    exercise_id: Mapped[str] = mapped_column(String(128), unique=True, index=True, nullable=False)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    muscle_coefficients_json: Mapped[str] = mapped_column(Text, nullable=False, default="{}")
+    technique_tip: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+    )
+
+
 class Workout(Base):
     __tablename__ = "workouts"
 

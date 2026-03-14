@@ -79,4 +79,32 @@ export async function updateMyProfile(authToken, payload) {
   });
 }
 
+export async function getExerciseCatalog() {
+  return request("/exercise-catalog");
+}
+
+export async function adminCreateExercise(authToken, payload) {
+  return request("/admin/exercises", {
+    method: "POST",
+    authToken,
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function adminImportExercisesCsv(authToken, csvText) {
+  return request("/admin/exercises/import-csv", {
+    method: "POST",
+    authToken,
+    body: JSON.stringify({ csv_text: csvText }),
+  });
+}
+
+export async function adminChangePassword(authToken, payload) {
+  return request("/admin/change-password", {
+    method: "POST",
+    authToken,
+    body: JSON.stringify(payload),
+  });
+}
+
 export { API_URL };

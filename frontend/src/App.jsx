@@ -7,17 +7,28 @@ import AuthPage from "./pages/AuthPage";
 import WorkoutDiaryPage from "./pages/WorkoutDiaryPage";
 import WorkoutHistoryPage from "./pages/WorkoutHistoryPage";
 import UserProfilePage from "./pages/UserProfilePage";
+import AdminPage from "./pages/AdminPage";
 import { loadAuthSession, persistAuthSession } from "./utils/authStorage";
 import { loadSavedWorkouts, persistSavedWorkouts } from "./utils/workoutStorage";
 
 export default function App() {
   const navigate = useNavigate();
   const [authSession, setAuthSession] = useState(() => loadAuthSession());
-  const [savedWorkouts, setSavedWorkouts] = useState(() => loadSavedWorkouts());
+  const [savedWorkouts, setSavedWorkouts] = useState([]);
+  const isAdmin = Boolean(authSession?.user?.is_admin);
 
   useEffect(() => {
-    persistSavedWorkouts(savedWorkouts);
-  }, [savedWorkouts]);
+    if (!authSession?.user?.id) {
+      setSavedWorkouts([]);
+      return;
+    }
+    setSavedWorkouts(loadSavedWorkouts(authSession.user.id));
+  }, [authSession?.user?.id]);
+
+  useEffect(() => {
+    if (!authSession?.user?.id) return;
+    persistSavedWorkouts(authSession.user.id, savedWorkouts);
+  }, [authSession?.user?.id, savedWorkouts]);
 
   useEffect(() => {
     persistAuthSession(authSession);
@@ -25,6 +36,10 @@ export default function App() {
 
   function handleSaveWorkout(snapshot) {
     setSavedWorkouts((prev) => [snapshot, ...prev]);
+  }
+
+  function handleDeleteWorkout(workoutId) {
+    setSavedWorkouts((prev) => prev.filter((workout) => workout.id !== workoutId));
   }
 
   function handleAuthenticated(session) {
@@ -49,9 +64,24 @@ export default function App() {
         <Route path="/profile" element={<UserProfilePage authToken={authSession.access_token} />} />
         <Route
           path="/workout"
-          element={<WorkoutDiaryPage onSaveWorkout={handleSaveWorkout} savedWorkouts={savedWorkouts} />}
+          element={
+            <WorkoutDiaryPage
+              authToken={authSession.access_token}
+              onSaveWorkout={handleSaveWorkout}
+              savedWorkouts={savedWorkouts}
+            />
+          }
         />
-        <Route path="/history" element={<WorkoutHistoryPage savedWorkouts={savedWorkouts} />} />
+        <Route
+          path="/history"
+          element={<WorkoutHistoryPage savedWorkouts={savedWorkouts} onDeleteWorkout={handleDeleteWorkout} />}
+        />
+        <Route
+          path="/admin"
+          element={
+            isAdmin ? <AdminPage authToken={authSession.access_token} /> : <Navigate to="/profile" replace />
+          }
+        />
       </Routes>
     </div>
   );

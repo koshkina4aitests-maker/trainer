@@ -89,14 +89,14 @@ export default function AuthPage({ onAuthenticated }) {
             <label className="space-y-1 text-sm text-slate-700">
               <span className="inline-flex items-center gap-1">
                 <Mail className="h-4 w-4" />
-                Email
+                Email / логин
               </span>
               <Input
-                type="email"
+                type="text"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
                 required
-                placeholder="you@example.com"
+                placeholder="you@example.com или Admin"
               />
             </label>
 
@@ -110,8 +110,8 @@ export default function AuthPage({ onAuthenticated }) {
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 required
-                minLength={8}
-                placeholder="Минимум 8 символов"
+                minLength={mode === "register" ? 8 : 1}
+                placeholder={mode === "register" ? "Минимум 8 символов" : "Введите пароль"}
               />
             </label>
 

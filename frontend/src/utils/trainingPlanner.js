@@ -1,10 +1,4 @@
-import {
-  exerciseDefinitions,
-  getMuscleCoefficients,
-  getTechniqueTip,
-  normalizeExerciseId,
-  translateExercise,
-} from "./trainingModel";
+import { getMuscleCoefficients, normalizeExerciseId, translateExercise } from "./trainingModel";
 
 function toNumber(value, fallback = 0) {
   const parsed = Number(value);
@@ -15,6 +9,56 @@ function roundToStep(value, step = 0.5) {
   return Math.round(value / step) * step;
 }
 
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
+const UPPER_BODY_MUSCLES = new Set([
+  "chest",
+  "triceps",
+  "biceps",
+  "front_delts",
+  "side_delts",
+  "rear_delts",
+  "lats",
+  "mid_back",
+  "traps",
+  "spinal_erectors",
+  "abs",
+]);
+
+const LOWER_BODY_MUSCLES = new Set(["quads", "glutes", "hamstrings", "calves", "spinal_erectors", "abs"]);
+
+function resolveCatalogItem(exerciseId, exerciseCatalog = {}) {
+  return exerciseCatalog[normalizeExerciseId(exerciseId)] ?? null;
+}
+
+function resolveMuscles(exerciseId, exerciseCatalog = {}, fallback = null) {
+  if (fallback && typeof fallback === "object" && Object.keys(fallback).length > 0) {
+    return { ...fallback };
+  }
+  const item = resolveCatalogItem(exerciseId, exerciseCatalog);
+  if (item?.muscles && Object.keys(item.muscles).length > 0) {
+    return { ...item.muscles };
+  }
+  return getMuscleCoefficients(exerciseId);
+}
+
+function resolveExerciseName(exerciseId, exerciseCatalog = {}) {
+  const item = resolveCatalogItem(exerciseId, exerciseCatalog);
+  return item?.name ?? translateExercise(exerciseId);
+}
+
+function isExerciseMatchingType(muscles, workoutType) {
+  if (workoutType === "fullbody") return true;
+  const keys = Object.keys(muscles ?? {});
+  if (keys.length === 0) return false;
+  if (workoutType === "split_upper") {
+    return keys.some((muscle) => UPPER_BODY_MUSCLES.has(muscle));
+  }
+  return keys.some((muscle) => LOWER_BODY_MUSCLES.has(muscle));
+}
+
 export function estimateOneRepMax(weight, reps) {
   const w = toNumber(weight, 0);
   const r = toNumber(reps, 0);
@@ -22,14 +66,19 @@ export function estimateOneRepMax(weight, reps) {
   return w * (1 + r / 30);
 }
 
-function buildExerciseHistory(savedWorkouts) {
+function buildExerciseHistory(savedWorkouts, exerciseCatalog = {}) {
   const sorted = [...savedWorkouts].sort((a, b) => new Date(b.savedAt) - new Date(a.savedAt));
   const byExercise = {};
+  const lastSeenAtByExercise = {};
+
   for (const workout of sorted) {
     for (const exercise of workout.exercises ?? []) {
       const exerciseId = normalizeExerciseId(exercise.kind ?? exercise.exerciseId ?? exercise.name ?? "");
       const sets = Array.isArray(exercise.sets) ? exercise.sets : [];
       if (sets.length === 0) continue;
+
+      const storedMuscles = exercise.muscleCoefficients ?? exercise.muscles ?? null;
+      const muscles = resolveMuscles(exerciseId, exerciseCatalog, storedMuscles);
       const avgWeight = sets.reduce((acc, setItem) => acc + toNumber(setItem.weight, 0), 0) / sets.length;
       const avgReps = sets.reduce((acc, setItem) => acc + toNumber(setItem.reps, 0), 0) / sets.length;
       const avgRir = sets.reduce((acc, setItem) => acc + toNumber(setItem.rir, 2), 0) / sets.length;
@@ -42,10 +91,21 @@ function buildExerciseHistory(savedWorkouts) {
         avgReps,
         avgRir,
         best1rm,
+        setsCount: sets.length,
+        muscles,
       });
+
+      if (!lastSeenAtByExercise[exerciseId] || new Date(workout.savedAt) > new Date(lastSeenAtByExercise[exerciseId])) {
+        lastSeenAtByExercise[exerciseId] = workout.savedAt;
+      }
     }
   }
-  return byExercise;
+
+  const recentExerciseIds = Object.entries(lastSeenAtByExercise)
+    .sort((a, b) => new Date(b[1]) - new Date(a[1]))
+    .map(([exerciseId]) => exerciseId);
+
+  return { byExercise, recentExerciseIds };
 }
 
 function defaultPresetForExercise(exerciseId) {
@@ -77,13 +137,26 @@ function defaultPresetForExercise(exerciseId) {
   return presets[exerciseId] ?? { sets: 3, reps: 10, rir: 2, fallbackWeight: 20 };
 }
 
+function presetFromHistory(historyRows, exerciseId) {
+  if (!historyRows || historyRows.length === 0) {
+    return defaultPresetForExercise(exerciseId);
+  }
+  const last = historyRows[0];
+  return {
+    sets: clamp(Math.round(last.setsCount || 3), 2, 6),
+    reps: clamp(Math.round(last.avgReps || 10), 5, 15),
+    rir: clamp(Math.round((last.avgRir || 2) * 2) / 2, 1, 3),
+    fallbackWeight: Math.max(0, roundToStep(last.avgWeight || defaultPresetForExercise(exerciseId).fallbackWeight)),
+  };
+}
+
 function targetWeightFrom1RM(oneRepMax, reps, rir) {
   if (!oneRepMax) return 0;
   const repsToFailure = reps + rir;
   return oneRepMax / (1 + repsToFailure / 30);
 }
 
-function determineExerciseList(workoutType) {
+function determineDefaultExerciseList(workoutType) {
   if (workoutType === "split_upper") {
     return ["bench_press", "pullups", "overhead_press", "barbell_row", "lateral_raise", "face_pull"];
   }
@@ -91,6 +164,21 @@ function determineExerciseList(workoutType) {
     return ["back_squat", "romanian_deadlift", "leg_press", "leg_curl", "calf_raise", "cable_crunch"];
   }
   return ["back_squat", "bench_press", "barbell_row", "romanian_deadlift", "overhead_press", "cable_crunch"];
+}
+
+function determineExerciseList(workoutType, historyState) {
+  const { byExercise, recentExerciseIds } = historyState;
+  const historyBased = recentExerciseIds
+    .filter((exerciseId) => {
+      const last = byExercise[exerciseId]?.[0];
+      return isExerciseMatchingType(last?.muscles ?? {}, workoutType);
+    })
+    .slice(0, 6);
+
+  if (historyBased.length > 0) {
+    return { exerciseIds: historyBased, usedHistory: true };
+  }
+  return { exerciseIds: determineDefaultExerciseList(workoutType), usedHistory: false };
 }
 
 function calculateConservativeWeight(exerciseId, historyRows, preset) {
@@ -147,28 +235,37 @@ function calculateConservativeWeight(exerciseId, historyRows, preset) {
   };
 }
 
-export function suggestWorkoutFromHistory(savedWorkouts, workoutType = "fullbody") {
-  const byExercise = buildExerciseHistory(savedWorkouts ?? []);
-  const targetExerciseIds = determineExerciseList(workoutType);
+export function suggestWorkoutFromHistory(savedWorkouts, workoutType = "fullbody", options = {}) {
+  const exerciseCatalog = options.exerciseCatalog ?? {};
+  const historyState = buildExerciseHistory(savedWorkouts ?? [], exerciseCatalog);
+  const { byExercise } = historyState;
+  const target = determineExerciseList(workoutType, historyState);
+  const targetExerciseIds = target.exerciseIds;
 
   const suggestedExercises = targetExerciseIds.map((exerciseId) => {
-    const preset = defaultPresetForExercise(exerciseId);
     const history = byExercise[exerciseId] ?? [];
+    const preset = presetFromHistory(history, exerciseId);
     const progression = calculateConservativeWeight(exerciseId, history, preset);
 
     return {
       exerciseId,
-      name: translateExercise(exerciseId),
+      name: resolveExerciseName(exerciseId, exerciseCatalog),
       sets: preset.sets,
       reps: preset.reps,
       targetRir: preset.rir,
       targetWeight: progression.weight,
       estimatedOneRepMax: roundToStep(progression.estimatedOneRepMax, 0.5),
       progressionNote: progression.note,
-      techniqueTip: getTechniqueTip(exerciseId),
-      muscleCoefficients: getMuscleCoefficients(exerciseId),
+      muscleCoefficients: resolveMuscles(exerciseId, exerciseCatalog),
     };
   });
+
+  const hasHistory = (savedWorkouts ?? []).length > 0;
+  const sourceLabel = target.usedHistory
+    ? "Прогрессия рассчитана по вашим сохранённым упражнениям."
+    : hasHistory
+      ? "По выбранной группе не нашлось упражнений в истории. Использован базовый набор."
+      : "Истории пока нет. Использован базовый набор для выбранной группы.";
 
   return {
     workoutType,
@@ -183,12 +280,14 @@ export function suggestWorkoutFromHistory(savedWorkouts, workoutType = "fullbody
       "Консервативный шаг, который можно поддерживать месяцами.",
       "Целевой запас в большинстве подходов: RIR 1–3.",
     ],
+    sourceLabel,
     suggestedExercises,
   };
 }
 
-export function assessCurrentWorkoutHeaviness(currentExercises, savedWorkouts) {
-  const byExercise = buildExerciseHistory(savedWorkouts ?? []);
+export function assessCurrentWorkoutHeaviness(currentExercises, savedWorkouts, options = {}) {
+  const exerciseCatalog = options.exerciseCatalog ?? {};
+  const { byExercise } = buildExerciseHistory(savedWorkouts ?? [], exerciseCatalog);
   const warnings = [];
 
   for (const exercise of currentExercises ?? []) {

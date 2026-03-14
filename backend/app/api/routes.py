@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+import csv
+import io
+import json
+import re
 from dataclasses import asdict
 from datetime import UTC, datetime
 from typing import Dict, List, Optional
@@ -14,8 +18,14 @@ from app.db import models
 from app.db.session import get_db
 from app.schemas import (
     AnalysisResponse,
+    AdminChangePasswordRequest,
+    AdminExerciseCreateRequest,
+    AdminImportCsvRequest,
+    AdminImportCsvResponse,
     AuthTokenResponse,
     AuthUserRead,
+    ExerciseCatalogItem,
+    ExerciseCatalogResponse,
     GoogleLoginRequest,
     LoginRequest,
     ProfileResponse,
@@ -33,10 +43,84 @@ from app.services.google_oauth import verify_google_id_token
 
 
 router = APIRouter()
+_EXERCISE_ID_CLEAN_RE = re.compile(r"[^a-z0-9_]+")
+
+
+def _normalize_exercise_id(value: str) -> str:
+    normalized = value.strip().lower().replace("-", "_").replace(" ", "_")
+    normalized = _EXERCISE_ID_CLEAN_RE.sub("_", normalized)
+    return re.sub(r"_+", "_", normalized).strip("_")
 
 
 def _normalize_email(email: str) -> str:
     return email.strip().lower()
+
+
+def _is_admin_account(account: models.Account) -> bool:
+    return _normalize_email(account.email) == "admin"
+
+
+def _require_admin(account: models.Account) -> None:
+    if not _is_admin_account(account):
+        raise HTTPException(status_code=403, detail="Admin access required")
+
+
+def _parse_muscles_dict(raw: object) -> Dict[str, float]:
+    if not isinstance(raw, dict):
+        raise ValueError("Muscles must be an object")
+    result: Dict[str, float] = {}
+    for key, value in raw.items():
+        muscle = str(key or "").strip().lower()
+        coeff = float(value)
+        if not muscle:
+            raise ValueError("Muscle id cannot be empty")
+        if coeff <= 0:
+            raise ValueError(f"Invalid coefficient for '{muscle}', must be > 0")
+        result[muscle] = coeff
+    if not result:
+        raise ValueError("At least one muscle coefficient is required")
+    return result
+
+
+def _parse_muscles_csv_value(raw: str) -> Dict[str, float]:
+    value = (raw or "").strip()
+    if not value:
+        raise ValueError("Muscles field is required")
+
+    if value.startswith("{"):
+        parsed = json.loads(value)
+        return _parse_muscles_dict(parsed)
+
+    result: Dict[str, float] = {}
+    for chunk in re.split(r"[;,]", value):
+        part = chunk.strip()
+        if not part:
+            continue
+        if ":" not in part:
+            raise ValueError(f"Invalid muscles pair '{part}', expected muscle:coeff")
+        muscle, coeff_raw = part.split(":", 1)
+        muscle_id = _normalize_exercise_id(muscle)
+        coeff = float(coeff_raw.strip())
+        if coeff <= 0:
+            raise ValueError(f"Invalid coefficient for '{muscle_id}', must be > 0")
+        result[muscle_id] = coeff
+    if not result:
+        raise ValueError("Muscles field is empty")
+    return result
+
+
+def _custom_exercise_to_read(item: models.CustomExercise) -> ExerciseCatalogItem:
+    try:
+        muscles = _parse_muscles_dict(json.loads(item.muscle_coefficients_json))
+    except Exception:
+        muscles = {}
+    return ExerciseCatalogItem(
+        id=item.exercise_id,
+        name=item.name,
+        muscles=muscles,
+        technique_tip=item.technique_tip,
+        source="custom",
+    )
 
 
 def _account_to_read(account: models.Account) -> AuthUserRead:
@@ -45,6 +129,7 @@ def _account_to_read(account: models.Account) -> AuthUserRead:
         email=account.email,
         full_name=account.full_name,
         auth_provider=account.auth_provider,
+        is_admin=_is_admin_account(account),
         created_at=account.created_at,
     )
 
@@ -114,12 +199,12 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)) -> AuthTok
 
 @router.post("/auth/login", response_model=AuthTokenResponse, tags=["auth"])
 def login(payload: LoginRequest, db: Session = Depends(get_db)) -> AuthTokenResponse:
-    email = _normalize_email(payload.email)
-    account = db.scalar(select(models.Account).where(models.Account.email == email))
+    identifier = _normalize_email(payload.email)
+    account = db.scalar(select(models.Account).where(models.Account.email == identifier))
     if account is None or not account.password_hash:
-        raise HTTPException(status_code=401, detail="Invalid email or password")
+        raise HTTPException(status_code=401, detail="Invalid login or password")
     if not verify_password(payload.password, account.password_hash):
-        raise HTTPException(status_code=401, detail="Invalid email or password")
+        raise HTTPException(status_code=401, detail="Invalid login or password")
     return _token_response_for_account(account)
 
 
@@ -237,6 +322,116 @@ def update_profile_me(
         profile_completion_pct=_profile_completion_pct(profile, current_account),
         days_in_app=days_in_app,
     )
+
+
+@router.get("/exercise-catalog", response_model=ExerciseCatalogResponse, tags=["exercise-catalog"])
+def get_exercise_catalog(db: Session = Depends(get_db)) -> ExerciseCatalogResponse:
+    custom_items = db.scalars(select(models.CustomExercise).order_by(models.CustomExercise.created_at.desc())).all()
+    return ExerciseCatalogResponse(items=[_custom_exercise_to_read(item) for item in custom_items])
+
+
+@router.post("/admin/exercises", response_model=ExerciseCatalogItem, tags=["admin"])
+def admin_create_exercise(
+    payload: AdminExerciseCreateRequest,
+    db: Session = Depends(get_db),
+    current_account: models.Account = Depends(get_current_account),
+) -> ExerciseCatalogItem:
+    _require_admin(current_account)
+    exercise_id = _normalize_exercise_id(payload.id)
+    if not exercise_id:
+        raise HTTPException(status_code=400, detail="Exercise id is empty")
+
+    try:
+        muscles = _parse_muscles_dict(dict(payload.muscles))
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    existing = db.scalar(select(models.CustomExercise).where(models.CustomExercise.exercise_id == exercise_id))
+    if existing is None:
+        existing = models.CustomExercise(
+            exercise_id=exercise_id,
+            name=payload.name.strip(),
+            muscle_coefficients_json=json.dumps(muscles, ensure_ascii=False),
+            technique_tip=(payload.technique_tip or "").strip() or None,
+        )
+        db.add(existing)
+    else:
+        existing.name = payload.name.strip()
+        existing.muscle_coefficients_json = json.dumps(muscles, ensure_ascii=False)
+        existing.technique_tip = (payload.technique_tip or "").strip() or None
+    db.commit()
+    db.refresh(existing)
+    return _custom_exercise_to_read(existing)
+
+
+@router.post("/admin/exercises/import-csv", response_model=AdminImportCsvResponse, tags=["admin"])
+def admin_import_exercises_csv(
+    payload: AdminImportCsvRequest,
+    db: Session = Depends(get_db),
+    current_account: models.Account = Depends(get_current_account),
+) -> AdminImportCsvResponse:
+    _require_admin(current_account)
+    reader = csv.DictReader(io.StringIO(payload.csv_text))
+    if not reader.fieldnames:
+        raise HTTPException(status_code=400, detail="CSV is empty")
+
+    required_cols = {"id", "name", "muscles"}
+    missing = [name for name in required_cols if name not in reader.fieldnames]
+    if missing:
+        raise HTTPException(status_code=400, detail=f"CSV is missing columns: {', '.join(missing)}")
+
+    imported = 0
+    skipped = 0
+    errors: List[str] = []
+
+    for idx, row in enumerate(reader, start=2):
+        try:
+            raw_id = str(row.get("id") or "")
+            raw_name = str(row.get("name") or "")
+            raw_muscles = str(row.get("muscles") or "")
+            raw_tip = str(row.get("technique_tip") or "").strip() or None
+
+            exercise_id = _normalize_exercise_id(raw_id)
+            if not exercise_id:
+                raise ValueError("id is empty")
+            if not raw_name.strip():
+                raise ValueError("name is empty")
+            muscles = _parse_muscles_csv_value(raw_muscles)
+
+            existing = db.scalar(select(models.CustomExercise).where(models.CustomExercise.exercise_id == exercise_id))
+            if existing is None:
+                existing = models.CustomExercise(
+                    exercise_id=exercise_id,
+                    name=raw_name.strip(),
+                    muscle_coefficients_json=json.dumps(muscles, ensure_ascii=False),
+                    technique_tip=raw_tip,
+                )
+                db.add(existing)
+            else:
+                existing.name = raw_name.strip()
+                existing.muscle_coefficients_json = json.dumps(muscles, ensure_ascii=False)
+                existing.technique_tip = raw_tip
+            imported += 1
+        except Exception as exc:  # noqa: BLE001
+            skipped += 1
+            errors.append(f"Line {idx}: {exc}")
+    db.commit()
+
+    return AdminImportCsvResponse(imported=imported, skipped=skipped, errors=errors[:20])
+
+
+@router.post("/admin/change-password", tags=["admin"])
+def admin_change_password(
+    payload: AdminChangePasswordRequest,
+    db: Session = Depends(get_db),
+    current_account: models.Account = Depends(get_current_account),
+) -> Dict[str, str]:
+    _require_admin(current_account)
+    if not current_account.password_hash or not verify_password(payload.current_password, current_account.password_hash):
+        raise HTTPException(status_code=401, detail="Current password is invalid")
+    current_account.password_hash = get_password_hash(payload.new_password)
+    db.commit()
+    return {"status": "ok"}
 
 
 @router.post("/users", response_model=UserRead, tags=["users"])

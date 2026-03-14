@@ -104,6 +104,7 @@ class AuthUserRead(BaseModel):
     email: str
     full_name: Optional[str] = None
     auth_provider: str
+    is_admin: bool = False
     created_at: datetime
 
 
@@ -114,8 +115,8 @@ class RegisterRequest(BaseModel):
 
 
 class LoginRequest(BaseModel):
-    email: str = Field(..., min_length=5, max_length=255)
-    password: str = Field(..., min_length=8, max_length=128)
+    email: str = Field(..., min_length=1, max_length=255)
+    password: str = Field(..., min_length=1, max_length=128)
 
 
 class GoogleLoginRequest(BaseModel):
@@ -166,3 +167,37 @@ class ProfileResponse(BaseModel):
     notes: Optional[str] = None
     profile_completion_pct: int
     days_in_app: int
+
+
+class ExerciseCatalogItem(BaseModel):
+    id: str
+    name: str
+    muscles: Dict[str, float] = Field(default_factory=dict)
+    technique_tip: Optional[str] = None
+    source: Literal["custom"] = "custom"
+
+
+class ExerciseCatalogResponse(BaseModel):
+    items: List[ExerciseCatalogItem]
+
+
+class AdminExerciseCreateRequest(BaseModel):
+    id: str = Field(..., min_length=1, max_length=128)
+    name: str = Field(..., min_length=1, max_length=255)
+    muscles: Dict[str, float] = Field(default_factory=dict)
+    technique_tip: Optional[str] = Field(default=None, max_length=2000)
+
+
+class AdminImportCsvRequest(BaseModel):
+    csv_text: str = Field(..., min_length=1)
+
+
+class AdminImportCsvResponse(BaseModel):
+    imported: int
+    skipped: int
+    errors: List[str] = Field(default_factory=list)
+
+
+class AdminChangePasswordRequest(BaseModel):
+    current_password: str = Field(..., min_length=1, max_length=128)
+    new_password: str = Field(..., min_length=4, max_length=128)

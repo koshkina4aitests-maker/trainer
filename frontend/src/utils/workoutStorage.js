@@ -1,9 +1,14 @@
-const STORAGE_KEY = "saved_workouts_history_v1";
+const STORAGE_KEY_PREFIX = "saved_workouts_history_v2";
 
-export function loadSavedWorkouts() {
+function storageKey(accountId) {
+  return `${STORAGE_KEY_PREFIX}:${accountId ?? "anonymous"}`;
+}
+
+export function loadSavedWorkouts(accountId) {
   if (typeof window === "undefined") return [];
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!accountId) return [];
+    const raw = localStorage.getItem(storageKey(accountId));
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     return Array.isArray(parsed) ? parsed : [];
@@ -12,7 +17,8 @@ export function loadSavedWorkouts() {
   }
 }
 
-export function persistSavedWorkouts(items) {
+export function persistSavedWorkouts(accountId, items) {
   if (typeof window === "undefined") return;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+  if (!accountId) return;
+  localStorage.setItem(storageKey(accountId), JSON.stringify(items));
 }

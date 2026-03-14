@@ -1,5 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
+import { Button } from "../components/ui/button";
+import { Trash2 } from "lucide-react";
 
 function formatDate(value) {
   return new Intl.DateTimeFormat("ru-RU", {
@@ -11,7 +13,7 @@ function formatDate(value) {
   }).format(new Date(value));
 }
 
-export default function WorkoutHistoryPage({ savedWorkouts }) {
+export default function WorkoutHistoryPage({ savedWorkouts, onDeleteWorkout }) {
   return (
     <div className="mx-auto w-full max-w-7xl space-y-4 px-3 py-4 md:px-6 md:py-6">
       <Card className="rounded-2xl border-slate-200 bg-white shadow-sm">
@@ -46,6 +48,15 @@ export default function WorkoutHistoryPage({ savedWorkouts }) {
                   <Badge variant="outline">Длительность: {workout.durationMinutes} мин</Badge>
                   <Badge variant="outline">Упражнений: {workout.exercises.length}</Badge>
                   <Badge variant="outline">Нагрузка: {workout.totalLoad}</Badge>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-red-600 hover:bg-red-50 hover:text-red-700"
+                    onClick={() => onDeleteWorkout?.(workout.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Удалить
+                  </Button>
                 </div>
               </div>
             </CardHeader>

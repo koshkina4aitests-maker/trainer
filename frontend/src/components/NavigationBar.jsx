@@ -1,9 +1,9 @@
 import { NavLink } from "react-router-dom";
-import { ClipboardList, History, Dumbbell, LogOut, UserRound } from "lucide-react";
+import { ClipboardList, History, Dumbbell, LogOut, UserRound, ShieldCheck } from "lucide-react";
 
 import { Button } from "./ui/button";
 
-const links = [
+const baseLinks = [
   {
     to: "/profile",
     label: "Личный кабинет",
@@ -22,6 +22,10 @@ const links = [
 ];
 
 export default function NavigationBar({ currentUser, onLogout }) {
+  const links = currentUser?.is_admin
+    ? [...baseLinks, { to: "/admin", label: "Админка", icon: ShieldCheck }]
+    : baseLinks;
+
   return (
     <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur">
       <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-4 py-3 md:px-6">

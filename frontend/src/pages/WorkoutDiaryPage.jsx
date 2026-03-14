@@ -1,6 +1,7 @@
-import { useMemo, useState } from "react";
-import { CalendarDays, Check, Circle, Dumbbell, Plus, Trash2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { CalendarDays, Check, Circle, Dumbbell, Info, Plus, Trash2 } from "lucide-react";
 
+import { getExerciseCatalog } from "../api";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
@@ -44,13 +45,7 @@ function createExercise(kind, targetSets = 2) {
 }
 
 function initialExercises() {
-  return [
-    {
-      ...createExercise("bench_press", 2),
-      sets: [createSet(20, 10, 2, true), createSet(20, 10, 2, true)],
-    },
-    createExercise("pullups", 2),
-  ];
+  return [];
 }
 
 function setLoad(setItem) {
@@ -69,8 +64,17 @@ function dotColorClass(ratio) {
   return "bg-red-500";
 }
 
-function ExerciseCard({ exercise, canDelete, onToggleSet, onChangeSet, onAddSet, onDeleteExercise }) {
-  const coefficients = getMuscleCoefficients(exercise.kind);
+function ExerciseCard({
+  exercise,
+  resolveExerciseName,
+  resolveMuscleCoefficients,
+  resolveTechniqueTip,
+  onToggleSet,
+  onChangeSet,
+  onAddSet,
+  onDeleteExercise,
+}) {
+  const coefficients = resolveMuscleCoefficients(exercise.kind);
   const sortedMuscles = Object.entries(coefficients).sort((a, b) => b[1] - a[1]);
   const primary = sortedMuscles
     .filter(([, coefficient]) => coefficient >= 0.9)
@@ -79,7 +83,7 @@ function ExerciseCard({ exercise, canDelete, onToggleSet, onChangeSet, onAddSet,
     .filter(([, coefficient]) => coefficient < 0.9)
     .slice(0, 3)
     .map(([muscleId]) => translateMuscle(muscleId));
-  const techniqueTip = getTechniqueTip(exercise.kind);
+  const techniqueTip = resolveTechniqueTip(exercise.kind);
   const completedCount = exercise.sets.filter((setItem) => setItem.completed).length;
 
   return (
@@ -88,7 +92,10 @@ function ExerciseCard({ exercise, canDelete, onToggleSet, onChangeSet, onAddSet,
         <div className="flex items-start justify-between gap-3">
           <div className="space-y-2">
             <CardTitle className="text-[34px] leading-none tracking-tight md:text-2xl">
-              {translateExercise(exercise.kind)}
+              <span className="inline-flex cursor-help items-center gap-2" title={techniqueTip}>
+                {resolveExerciseName(exercise.kind)}
+                <Info className="h-4 w-4 text-slate-400" />
+              </span>
             </CardTitle>
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant="default">
@@ -98,9 +105,6 @@ function ExerciseCard({ exercise, canDelete, onToggleSet, onChangeSet, onAddSet,
                 Вторичные: {(secondary.length > 0 ? secondary : ["—"]).join(", ")}
               </Badge>
             </div>
-            <p className="max-w-3xl text-sm text-slate-600">
-              <span className="font-semibold">Подсказка по технике:</span> {techniqueTip}
-            </p>
           </div>
           <div className="flex items-center gap-2 pt-1">
             <span className="text-sm font-semibold text-slate-600">
@@ -111,7 +115,6 @@ function ExerciseCard({ exercise, canDelete, onToggleSet, onChangeSet, onAddSet,
               variant="ghost"
               className="text-red-500 hover:bg-red-50 hover:text-red-600"
               onClick={onDeleteExercise}
-              disabled={!canDelete}
             >
               <Trash2 className="h-4 w-4" />
             </Button>
@@ -204,10 +207,10 @@ function ExerciseCard({ exercise, canDelete, onToggleSet, onChangeSet, onAddSet,
   );
 }
 
-function buildMuscleLoads(exercises) {
+function buildMuscleLoads(exercises, resolveMuscleCoefficients) {
   const loads = {};
   for (const exercise of exercises) {
-    const map = getMuscleCoefficients(exercise.kind);
+    const map = resolveMuscleCoefficients(exercise.kind);
     for (const setItem of exercise.sets) {
       const exerciseLoad = setLoad(setItem);
       for (const [muscle, coefficient] of Object.entries(map)) {
@@ -220,12 +223,88 @@ function buildMuscleLoads(exercises) {
     .sort((a, b) => b[1] - a[1]);
 }
 
-export default function WorkoutDiaryPage({ onSaveWorkout, savedWorkouts = [] }) {
+export default function WorkoutDiaryPage({ authToken, onSaveWorkout, savedWorkouts = [] }) {
   const [exercises, setExercises] = useState(initialExercises);
+  const [exerciseCatalogItems, setExerciseCatalogItems] = useState([]);
   const [exerciseToAdd, setExerciseToAdd] = useState("bench_press");
   const [suggestedType, setSuggestedType] = useState("fullbody");
-  const [workoutTitle, setWorkoutTitle] = useState("Силовая тренировка");
+  const [workoutTitle, setWorkoutTitle] = useState("");
   const [saveMessage, setSaveMessage] = useState("");
+  const [saveError, setSaveError] = useState("");
+  const [suggestMessage, setSuggestMessage] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    async function loadCatalog() {
+      try {
+        const response = await getExerciseCatalog();
+        if (!active) return;
+        setExerciseCatalogItems(Array.isArray(response?.items) ? response.items : []);
+      } catch {
+        if (!active) return;
+        setExerciseCatalogItems([]);
+      }
+    }
+    loadCatalog();
+    return () => {
+      active = false;
+    };
+  }, [authToken]);
+
+  const mergedCatalog = useMemo(() => {
+    const merged = {};
+    for (const item of Object.values(exerciseDefinitions)) {
+      merged[item.id] = {
+        id: item.id,
+        name: item.name,
+        muscles: getMuscleCoefficients(item.id),
+        technique_tip: getTechniqueTip(item.id),
+      };
+    }
+    for (const item of exerciseCatalogItems) {
+      merged[item.id] = {
+        id: item.id,
+        name: item.name,
+        muscles: item.muscles ?? {},
+        technique_tip: item.technique_tip ?? null,
+      };
+    }
+    return merged;
+  }, [exerciseCatalogItems]);
+
+  const exerciseOptions = useMemo(
+    () =>
+      Object.values(mergedCatalog).sort((a, b) =>
+        String(a.name || a.id).localeCompare(String(b.name || b.id), "ru-RU"),
+      ),
+    [mergedCatalog],
+  );
+
+  useEffect(() => {
+    if (exerciseOptions.length === 0) return;
+    if (!exerciseToAdd || !mergedCatalog[exerciseToAdd]) {
+      setExerciseToAdd(exerciseOptions[0].id);
+    }
+  }, [exerciseOptions, exerciseToAdd, mergedCatalog]);
+
+  const resolveExerciseName = useMemo(
+    () => (exerciseId) => mergedCatalog[exerciseId]?.name ?? translateExercise(exerciseId),
+    [mergedCatalog],
+  );
+
+  const resolveMuscleCoefficients = useMemo(
+    () => (exerciseId) => ({ ...(mergedCatalog[exerciseId]?.muscles ?? getMuscleCoefficients(exerciseId)) }),
+    [mergedCatalog],
+  );
+
+  const resolveTechniqueTip = useMemo(
+    () =>
+      (exerciseId) =>
+        mergedCatalog[exerciseId]?.technique_tip ??
+        getTechniqueTip(exerciseId) ??
+        "Сохраняйте контроль техники в каждом повторении.",
+    [mergedCatalog],
+  );
 
   const totals = useMemo(() => {
     const totalPlannedSets = exercises.reduce((acc, exercise) => acc + exercise.targetSets, 0);
@@ -242,15 +321,18 @@ export default function WorkoutDiaryPage({ onSaveWorkout, savedWorkouts = [] }) 
     };
   }, [exercises]);
 
-  const muscleLoads = useMemo(() => buildMuscleLoads(exercises), [exercises]);
+  const muscleLoads = useMemo(
+    () => buildMuscleLoads(exercises, resolveMuscleCoefficients),
+    [exercises, resolveMuscleCoefficients],
+  );
   const maxLoad = muscleLoads[0]?.[1] || 1;
   const suggestedWorkout = useMemo(
-    () => suggestWorkoutFromHistory(savedWorkouts, suggestedType),
-    [savedWorkouts, suggestedType],
+    () => suggestWorkoutFromHistory(savedWorkouts, suggestedType, { exerciseCatalog: mergedCatalog }),
+    [savedWorkouts, suggestedType, mergedCatalog],
   );
   const heavinessAssessment = useMemo(
-    () => assessCurrentWorkoutHeaviness(exercises, savedWorkouts),
-    [exercises, savedWorkouts],
+    () => assessCurrentWorkoutHeaviness(exercises, savedWorkouts, { exerciseCatalog: mergedCatalog }),
+    [exercises, savedWorkouts, mergedCatalog],
   );
 
   function toggleSetCompleted(exerciseId, setIndex) {
@@ -304,11 +386,13 @@ export default function WorkoutDiaryPage({ onSaveWorkout, savedWorkouts = [] }) 
   }
 
   function deleteExercise(exerciseId) {
-    setExercises((prev) => (prev.length > 1 ? prev.filter((exercise) => exercise.id !== exerciseId) : prev));
+    setExercises((prev) => prev.filter((exercise) => exercise.id !== exerciseId));
   }
 
   function addExercise() {
+    if (!exerciseToAdd) return;
     setExercises((prev) => [...prev, createExercise(exerciseToAdd, 2)]);
+    setSaveError("");
   }
 
   function applySuggestedWorkout() {
@@ -322,6 +406,8 @@ export default function WorkoutDiaryPage({ onSaveWorkout, savedWorkouts = [] }) 
     }));
     setExercises(nextExercises);
     setWorkoutTitle(suggestedWorkout.title);
+    setSuggestMessage(suggestedWorkout.sourceLabel);
+    setSaveError("");
   }
 
   function createWorkoutSnapshot() {
@@ -340,10 +426,11 @@ export default function WorkoutDiaryPage({ onSaveWorkout, savedWorkouts = [] }) 
       exercises: exercises.map((exercise) => ({
         exerciseId: exercise.id,
         kind: exercise.kind,
-        name: translateExercise(exercise.kind),
+        name: resolveExerciseName(exercise.kind),
         setsCount: exercise.sets.length,
         completedSets: exercise.sets.filter((setItem) => setItem.completed).length,
         load: Math.round(exercise.sets.reduce((acc, setItem) => acc + setLoad(setItem), 0)),
+        muscleCoefficients: resolveMuscleCoefficients(exercise.kind),
         sets: exercise.sets.map((setItem) => ({
           weight: Number(setItem.weight),
           reps: Number(setItem.reps),
@@ -359,9 +446,15 @@ export default function WorkoutDiaryPage({ onSaveWorkout, savedWorkouts = [] }) 
   }
 
   function handleSaveWorkout() {
+    if (exercises.length === 0) {
+      setSaveError("Тренировка пустая. Добавьте хотя бы одно упражнение перед сохранением.");
+      setSaveMessage("");
+      return;
+    }
     const snapshot = createWorkoutSnapshot();
     onSaveWorkout?.(snapshot);
     setSaveMessage(`Тренировка «${snapshot.title}» сохранена.`);
+    setSaveError("");
   }
 
   return (
@@ -430,7 +523,7 @@ export default function WorkoutDiaryPage({ onSaveWorkout, savedWorkouts = [] }) 
                 onChange={(event) => setExerciseToAdd(event.target.value)}
                 className="h-10 min-w-[240px] rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-sm outline-none focus:ring-2 focus:ring-blue-500"
               >
-                {Object.values(exerciseDefinitions).map((item) => (
+                {exerciseOptions.map((item) => (
                   <option value={item.id} key={item.id}>
                     {item.name}
                   </option>
@@ -444,53 +537,34 @@ export default function WorkoutDiaryPage({ onSaveWorkout, savedWorkouts = [] }) 
               <Button className="h-10" onClick={handleSaveWorkout}>
                 Сохранить тренировку
               </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-2xl">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xl text-slate-900">Предложение тренировки на базе предыдущих</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex flex-col gap-2 md:flex-row md:items-center">
               <select
                 value={suggestedType}
                 onChange={(event) => setSuggestedType(event.target.value)}
-                className="h-10 min-w-[220px] rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-sm outline-none focus:ring-2 focus:ring-blue-500"
+                className="h-10 min-w-[180px] rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-sm outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="split_upper">split верх</option>
                 <option value="split_lower">split низ</option>
                 <option value="fullbody">fullbody</option>
               </select>
               <Button variant="outline" className="h-10" onClick={applySuggestedWorkout}>
-                Применить предложение
+                Предложить следующую
               </Button>
-            </div>
-
-            <ul className="list-disc space-y-1 pl-5 text-sm text-slate-600">
-              {suggestedWorkout.principles.map((rule) => (
-                <li key={rule}>{rule}</li>
-              ))}
-            </ul>
-
-            <div className="grid gap-2 md:grid-cols-2">
-              {suggestedWorkout.suggestedExercises.map((item) => (
-                <div key={item.exerciseId} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                  <p className="font-semibold text-slate-800">{item.name}</p>
-                  <p className="text-sm text-slate-600">
-                    {item.sets}×{item.reps} · вес {item.targetWeight} кг · целевой RIR {item.targetRir}
-                  </p>
-                  <p className="text-xs text-slate-500">Оценка 1ПМ: {item.estimatedOneRepMax} кг</p>
-                  <p className="mt-1 text-xs text-slate-500">{item.progressionNote}</p>
-                  <p className="mt-1 text-xs text-slate-600">
-                    <span className="font-medium">Техника:</span> {item.techniqueTip}
-                  </p>
-                </div>
-              ))}
             </div>
           </CardContent>
         </Card>
+
+        {suggestMessage && (
+          <Card className="rounded-2xl border-blue-200 bg-blue-50">
+            <CardContent className="space-y-2 p-4">
+              <p className="text-sm font-semibold text-blue-900">{suggestMessage}</p>
+              <ul className="list-disc space-y-1 pl-5 text-sm text-blue-800">
+                {suggestedWorkout.principles.map((rule) => (
+                  <li key={rule}>{rule}</li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+        )}
 
         {heavinessAssessment.warnings.length > 0 && (
           <Card className="rounded-2xl border-amber-200 bg-amber-50">
@@ -513,6 +587,19 @@ export default function WorkoutDiaryPage({ onSaveWorkout, savedWorkouts = [] }) 
             <CardContent className="p-3 text-sm font-medium text-emerald-700">{saveMessage}</CardContent>
           </Card>
         )}
+        {saveError && (
+          <Card className="rounded-2xl border-red-200 bg-red-50">
+            <CardContent className="p-3 text-sm font-medium text-red-700">{saveError}</CardContent>
+          </Card>
+        )}
+
+        {exercises.length === 0 && (
+          <Card className="rounded-2xl border-slate-200 bg-white shadow-sm">
+            <CardContent className="p-6 text-sm text-slate-600">
+              Текущая тренировка пустая. Добавьте упражнение вручную или нажмите «Предложить следующую».
+            </CardContent>
+          </Card>
+        )}
 
         <section className="grid gap-4 lg:grid-cols-[1.85fr_1fr]">
           <div className="space-y-4">
@@ -520,7 +607,9 @@ export default function WorkoutDiaryPage({ onSaveWorkout, savedWorkouts = [] }) 
               <ExerciseCard
                 key={exercise.id}
                 exercise={exercise}
-                canDelete={exercises.length > 1}
+                resolveExerciseName={resolveExerciseName}
+                resolveMuscleCoefficients={resolveMuscleCoefficients}
+                resolveTechniqueTip={resolveTechniqueTip}
                 onToggleSet={(setIndex) => toggleSetCompleted(exercise.id, setIndex)}
                 onChangeSet={(setIndex, field, value) => changeSet(exercise.id, setIndex, field, value)}
                 onAddSet={() => addSet(exercise.id)}
@@ -534,6 +623,9 @@ export default function WorkoutDiaryPage({ onSaveWorkout, savedWorkouts = [] }) 
               <CardTitle className="text-2xl text-slate-900">Нагрузка на мышечные группы</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              {muscleLoads.length === 0 && (
+                <p className="text-sm text-slate-500">Пока нет нагрузки: добавьте упражнения и подходы.</p>
+              )}
               {muscleLoads.map(([muscle, load]) => {
                 const ratio = load / maxLoad;
                 const width = Math.max(4, Math.round(ratio * 100));
