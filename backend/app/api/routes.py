@@ -266,6 +266,7 @@ def get_profile_me(
         email=current_account.email,
         full_name=current_account.full_name,
         age=profile.age,
+        sex=profile.sex,  # type: ignore[arg-type]
         training_style=profile.training_style,  # type: ignore[arg-type]
         workouts_per_week=profile.workouts_per_week,
         goal=profile.goal,  # type: ignore[arg-type]
@@ -290,6 +291,7 @@ def update_profile_me(
     profile = _get_or_create_profile(db, current_account)
     current_account.full_name = (payload.full_name or "").strip() or None
     profile.age = payload.age
+    profile.sex = payload.sex
     profile.training_style = payload.training_style
     profile.workouts_per_week = payload.workouts_per_week
     profile.goal = payload.goal
@@ -309,6 +311,7 @@ def update_profile_me(
         email=current_account.email,
         full_name=current_account.full_name,
         age=profile.age,
+        sex=profile.sex,  # type: ignore[arg-type]
         training_style=profile.training_style,  # type: ignore[arg-type]
         workouts_per_week=profile.workouts_per_week,
         goal=profile.goal,  # type: ignore[arg-type]

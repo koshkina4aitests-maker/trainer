@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import select
+from sqlalchemy import text
 
 from app.api.routes import router
 from app.core.config import get_settings
@@ -29,6 +30,10 @@ app.add_middleware(
 @app.on_event("startup")
 def startup_event() -> None:
     Base.metadata.create_all(bind=engine)
+    with engine.begin() as connection:
+        connection.execute(
+            text("ALTER TABLE account_profiles ADD COLUMN IF NOT EXISTS sex VARCHAR(16) DEFAULT 'female'")
+        )
     db = SessionLocal()
     try:
         admin = db.scalar(select(models.Account).where(models.Account.email == "admin"))

@@ -13,6 +13,11 @@ const styleOptions = [
   { value: "other", label: "other" },
 ];
 
+const sexOptions = [
+  { value: "female", label: "Женский" },
+  { value: "male", label: "Мужской" },
+];
+
 const goalOptions = [
   { value: "strength", label: "Сила" },
   { value: "hypertrophy", label: "Гипертрофия" },
@@ -47,6 +52,7 @@ export default function UserProfilePage({ authToken }) {
     email: "",
     full_name: "",
     age: "",
+    sex: "female",
     training_style: "split",
     workouts_per_week: "3",
     goal: "hypertrophy",
@@ -73,6 +79,7 @@ export default function UserProfilePage({ authToken }) {
           email: data.email,
           full_name: toValue(data.full_name),
           age: toValue(data.age),
+          sex: data.sex ?? "female",
           training_style: data.training_style ?? "split",
           workouts_per_week: String(data.workouts_per_week ?? 3),
           goal: data.goal ?? "hypertrophy",
@@ -112,6 +119,7 @@ export default function UserProfilePage({ authToken }) {
       const payload = {
         full_name: form.full_name || null,
         age: toNumberOrNull(form.age),
+        sex: form.sex || "female",
         training_style: form.training_style,
         workouts_per_week: Number(form.workouts_per_week || 3),
         goal: form.goal,
@@ -213,6 +221,21 @@ export default function UserProfilePage({ authToken }) {
               <label className="space-y-1">
                 <span className="text-sm text-slate-700">Возраст</span>
                 <Input type="number" value={form.age} onChange={(event) => setField("age", event.target.value)} />
+              </label>
+
+              <label className="space-y-1">
+                <span className="text-sm text-slate-700">Пол</span>
+                <select
+                  value={form.sex}
+                  onChange={(event) => setField("sex", event.target.value)}
+                  className="h-9 rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-sm"
+                >
+                  {sexOptions.map((item) => (
+                    <option key={item.value} value={item.value}>
+                      {item.label}
+                    </option>
+                  ))}
+                </select>
               </label>
 
               <label className="space-y-1">

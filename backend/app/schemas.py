@@ -133,11 +133,13 @@ class AuthTokenResponse(BaseModel):
 TrainingStyleProfile = Literal["split", "fullbody", "other"]
 GoalProfile = Literal["strength", "hypertrophy", "endurance", "health", "weight_loss"]
 ExperienceLevel = Literal["beginner", "intermediate", "advanced"]
+SexProfile = Literal["female", "male"]
 
 
 class ProfileUpdateRequest(BaseModel):
     full_name: Optional[str] = Field(default=None, max_length=255)
     age: Optional[int] = Field(default=None, ge=13, le=100)
+    sex: SexProfile = "female"
     training_style: TrainingStyleProfile = "split"
     workouts_per_week: int = Field(default=3, ge=1, le=14)
     goal: GoalProfile = "hypertrophy"
@@ -155,6 +157,7 @@ class ProfileResponse(BaseModel):
     email: str
     full_name: Optional[str] = None
     age: Optional[int] = None
+    sex: SexProfile = "female"
     training_style: TrainingStyleProfile
     workouts_per_week: int
     goal: GoalProfile

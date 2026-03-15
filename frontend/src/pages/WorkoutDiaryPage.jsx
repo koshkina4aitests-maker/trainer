@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { CalendarDays, Check, Circle, Dumbbell, Info, Plus, Trash2 } from "lucide-react";
 
-import { getExerciseCatalog } from "../api";
+import { getExerciseCatalog, getMyProfile } from "../api";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
@@ -52,16 +52,16 @@ function setLoad(setItem) {
   return Math.round(Number(setItem.weight) * Number(setItem.reps) * 0.8);
 }
 
-function loadColorClass(ratio) {
-  if (ratio < 0.55) return "bg-emerald-500";
-  if (ratio < 0.8) return "bg-amber-500";
-  return "bg-red-500";
+function normalizeSex(value) {
+  return value === "male" ? "male" : "female";
 }
 
-function dotColorClass(ratio) {
-  if (ratio < 0.55) return "bg-emerald-500";
-  if (ratio < 0.8) return "bg-amber-500";
-  return "bg-red-500";
+function colorByTargetRatio(ratio, hasTarget) {
+  if (!hasTarget) return "#cbd5e1";
+  if (ratio < 0.7) return "#f59e0b";
+  if (ratio <= 1.1) return "#10b981";
+  if (ratio <= 1.3) return "#f97316";
+  return "#ef4444";
 }
 
 function ExerciseCard({
@@ -213,25 +213,150 @@ function ExerciseCard({
   );
 }
 
-function buildMuscleLoads(exercises, resolveMuscleCoefficients) {
+function buildMuscleProgress(exercises, resolveMuscleCoefficients) {
   const loads = {};
   for (const exercise of exercises) {
     const map = resolveMuscleCoefficients(exercise.kind);
     for (const setItem of exercise.sets) {
       const exerciseLoad = setLoad(setItem);
       for (const [muscle, coefficient] of Object.entries(map)) {
-        loads[muscle] = (loads[muscle] || 0) + exerciseLoad * coefficient;
+        const weighted = exerciseLoad * coefficient;
+        loads[muscle] = loads[muscle] || { planned: 0, completed: 0 };
+        loads[muscle].planned += weighted;
+        if (setItem.completed) {
+          loads[muscle].completed += weighted;
+        }
       }
     }
   }
-  return Object.entries(loads)
-    .map(([muscle, load]) => [muscle, Math.round(load)])
-    .sort((a, b) => b[1] - a[1]);
+  return Object.fromEntries(
+    Object.entries(loads).map(([muscle, row]) => [
+      muscle,
+      {
+        planned: Math.round(row.planned),
+        completed: Math.round(row.completed),
+        ratio: row.planned > 0 ? row.completed / row.planned : 0,
+      },
+    ]),
+  );
+}
+
+function mirroredPair(cxLeft, cxRight, cy, rx, ry) {
+  return [
+    { cx: cxLeft, cy, rx, ry },
+    { cx: cxRight, cy, rx, ry },
+  ];
+}
+
+const MUSCLE_LAYOUTS = {
+  female: {
+    front: {
+      front_delts: mirroredPair(88, 172, 95, 16, 12),
+      side_delts: mirroredPair(73, 187, 105, 10, 15),
+      chest: mirroredPair(95, 165, 132, 18, 14),
+      biceps: mirroredPair(70, 190, 152, 11, 16),
+      triceps: mirroredPair(64, 196, 170, 9, 16),
+      abs: [
+        { cx: 130, cy: 175, rx: 16, ry: 34 },
+        { cx: 130, cy: 220, rx: 14, ry: 26 },
+      ],
+      quads: mirroredPair(105, 155, 298, 17, 48),
+      calves: mirroredPair(106, 154, 410, 12, 34),
+    },
+    back: {
+      rear_delts: mirroredPair(86, 174, 101, 14, 12),
+      traps: [{ cx: 130, cy: 112, rx: 24, ry: 16 }],
+      triceps: mirroredPair(66, 194, 162, 10, 16),
+      lats: mirroredPair(93, 167, 170, 17, 34),
+      mid_back: [{ cx: 130, cy: 176, rx: 18, ry: 30 }],
+      spinal_erectors: [{ cx: 130, cy: 210, rx: 10, ry: 38 }],
+      glutes: mirroredPair(108, 152, 267, 20, 18),
+      hamstrings: mirroredPair(108, 152, 332, 16, 44),
+      calves: mirroredPair(106, 154, 410, 12, 34),
+    },
+  },
+  male: {
+    front: {
+      front_delts: mirroredPair(84, 176, 92, 18, 13),
+      side_delts: mirroredPair(69, 191, 104, 11, 16),
+      chest: mirroredPair(96, 164, 132, 22, 16),
+      biceps: mirroredPair(66, 194, 155, 12, 18),
+      triceps: mirroredPair(60, 200, 175, 10, 17),
+      abs: [
+        { cx: 130, cy: 179, rx: 18, ry: 36 },
+        { cx: 130, cy: 225, rx: 16, ry: 28 },
+      ],
+      quads: mirroredPair(104, 156, 302, 19, 50),
+      calves: mirroredPair(104, 156, 412, 13, 35),
+    },
+    back: {
+      rear_delts: mirroredPair(84, 176, 98, 16, 12),
+      traps: [{ cx: 130, cy: 111, rx: 26, ry: 17 }],
+      triceps: mirroredPair(62, 198, 165, 11, 17),
+      lats: mirroredPair(92, 168, 172, 19, 36),
+      mid_back: [{ cx: 130, cy: 180, rx: 20, ry: 32 }],
+      spinal_erectors: [{ cx: 130, cy: 215, rx: 11, ry: 40 }],
+      glutes: mirroredPair(107, 153, 270, 21, 19),
+      hamstrings: mirroredPair(107, 153, 336, 17, 45),
+      calves: mirroredPair(104, 156, 412, 13, 35),
+    },
+  },
+};
+
+function FigureBackground({ sex }) {
+  const isMale = sex === "male";
+  return (
+    <>
+      <circle cx="130" cy="46" r={isMale ? 24 : 22} fill="#e2e8f0" />
+      <rect x={isMale ? 93 : 98} y="72" width={isMale ? 74 : 64} height={isMale ? 176 : 170} rx="30" fill="#e2e8f0" />
+      <rect x={isMale ? 70 : 74} y="86" width={isMale ? 22 : 20} height={isMale ? 170 : 164} rx="10" fill="#e2e8f0" />
+      <rect x={isMale ? 168 : 166} y="86" width={isMale ? 22 : 20} height={isMale ? 170 : 164} rx="10" fill="#e2e8f0" />
+      <rect x={isMale ? 98 : 102} y="248" width={isMale ? 24 : 22} height="210" rx="12" fill="#e2e8f0" />
+      <rect x={isMale ? 138 : 136} y="248" width={isMale ? 24 : 22} height="210" rx="12" fill="#e2e8f0" />
+    </>
+  );
+}
+
+function HumanMuscleFigure({ sex = "female", view = "front", muscleProgress = {} }) {
+  const safeSex = normalizeSex(sex);
+  const shapes = MUSCLE_LAYOUTS[safeSex][view];
+
+  return (
+    <svg viewBox="0 0 260 480" className="h-[480px] w-full rounded-xl border border-slate-200 bg-slate-50">
+      <FigureBackground sex={safeSex} />
+      {Object.entries(shapes).map(([muscleId, ellipses]) => {
+        const progress = muscleProgress[muscleId] || { planned: 0, completed: 0, ratio: 0 };
+        const fill = colorByTargetRatio(progress.ratio, progress.planned > 0);
+        const ratioPct = progress.planned > 0 ? Math.round(progress.ratio * 100) : 0;
+        return (
+          <g key={`${view}-${muscleId}`}>
+            <title>
+              {translateMuscle(muscleId)}: {progress.completed} / {progress.planned} ({ratioPct}% от цели)
+            </title>
+            {ellipses.map((shape, idx) => (
+              <ellipse
+                key={`${view}-${muscleId}-${idx}`}
+                cx={shape.cx}
+                cy={shape.cy}
+                rx={shape.rx}
+                ry={shape.ry}
+                fill={fill}
+                fillOpacity="0.9"
+                stroke="#334155"
+                strokeOpacity="0.2"
+              />
+            ))}
+          </g>
+        );
+      })}
+    </svg>
+  );
 }
 
 export default function WorkoutDiaryPage({ authToken, onSaveWorkout, savedWorkouts = [] }) {
   const [exercises, setExercises] = useState(initialExercises);
   const [exerciseCatalogItems, setExerciseCatalogItems] = useState([]);
+  const [userSex, setUserSex] = useState("female");
   const [exerciseToAdd, setExerciseToAdd] = useState("bench_press");
   const [suggestedType, setSuggestedType] = useState("fullbody");
   const [workoutTitle, setWorkoutTitle] = useState("");
@@ -239,7 +364,7 @@ export default function WorkoutDiaryPage({ authToken, onSaveWorkout, savedWorkou
   const [saveError, setSaveError] = useState("");
   const [suggestMessage, setSuggestMessage] = useState("");
   const muscleLoadHint =
-    "Нагрузка мышцы = сумма по всем подходам: (вес × повторы × 0.8 × коэффициент мышцы в упражнении).";
+    "Целевая нагрузка мышцы = сумма по всем запланированным подходам: (вес × повторы × 0.8 × коэффициент мышцы). Текущая нагрузка считается только по выполненным подходам.";
 
   useEffect(() => {
     let active = true;
@@ -254,6 +379,24 @@ export default function WorkoutDiaryPage({ authToken, onSaveWorkout, savedWorkou
       }
     }
     loadCatalog();
+    return () => {
+      active = false;
+    };
+  }, [authToken]);
+
+  useEffect(() => {
+    let active = true;
+    async function loadProfileSex() {
+      try {
+        const profile = await getMyProfile(authToken);
+        if (!active) return;
+        setUserSex(normalizeSex(profile?.sex));
+      } catch {
+        if (!active) return;
+        setUserSex("female");
+      }
+    }
+    loadProfileSex();
     return () => {
       active = false;
     };
@@ -329,11 +472,17 @@ export default function WorkoutDiaryPage({ authToken, onSaveWorkout, savedWorkou
     };
   }, [exercises]);
 
-  const muscleLoads = useMemo(
-    () => buildMuscleLoads(exercises, resolveMuscleCoefficients),
+  const muscleProgress = useMemo(
+    () => buildMuscleProgress(exercises, resolveMuscleCoefficients),
     [exercises, resolveMuscleCoefficients],
   );
-  const maxLoad = muscleLoads[0]?.[1] || 1;
+  const muscleProgressRows = useMemo(
+    () =>
+      Object.entries(muscleProgress)
+        .sort((a, b) => b[1].planned - a[1].planned)
+        .slice(0, 12),
+    [muscleProgress],
+  );
   const suggestedWorkout = useMemo(
     () => suggestWorkoutFromHistory(savedWorkouts, suggestedType, { exerciseCatalog: mergedCatalog }),
     [savedWorkouts, suggestedType, mergedCatalog],
@@ -446,9 +595,11 @@ export default function WorkoutDiaryPage({ authToken, onSaveWorkout, savedWorkou
           completed: Boolean(setItem.completed),
         })),
       })),
-      muscleLoads: muscleLoads.map(([muscle, load]) => ({
+      muscleLoads: Object.entries(muscleProgress).map(([muscle, row]) => ({
         muscle: translateMuscle(muscle),
-        load,
+        load: row.completed,
+        targetLoad: row.planned,
+        targetRatio: row.ratio,
       })),
     };
   }
@@ -636,42 +787,47 @@ export default function WorkoutDiaryPage({ authToken, onSaveWorkout, savedWorkou
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {muscleLoads.length === 0 && (
+              {muscleProgressRows.length === 0 && (
                 <p className="text-sm text-slate-500">Пока нет нагрузки: добавьте упражнения и подходы.</p>
               )}
-              {muscleLoads.map(([muscle, load]) => {
-                const ratio = load / maxLoad;
-                const width = Math.max(4, Math.round(ratio * 100));
-                return (
-                  <div key={muscle} className="space-y-2">
-                    <div className="flex items-center justify-between text-base">
-                      <span className="font-medium text-slate-700">{translateMuscle(muscle)}</span>
-                      <div className="flex items-center gap-2 text-slate-600">
-                        <span className="font-semibold">{load}</span>
-                        <span className={`h-2.5 w-2.5 rounded-full ${dotColorClass(ratio)}`} />
-                      </div>
-                    </div>
-                    <Progress
-                      value={width}
-                      className="h-2 bg-slate-200"
-                      indicatorClassName={loadColorClass(ratio)}
-                    />
+              <div className="grid gap-3 xl:grid-cols-2">
+                <div className="space-y-2">
+                  <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Вид спереди</p>
+                  <HumanMuscleFigure sex={userSex} view="front" muscleProgress={muscleProgress} />
+                </div>
+                <div className="space-y-2">
+                  <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Вид сзади</p>
+                  <HumanMuscleFigure sex={userSex} view="back" muscleProgress={muscleProgress} />
+                </div>
+              </div>
+
+              <div className="space-y-2 border-t border-slate-200 pt-3">
+                {muscleProgressRows.map(([muscle, row]) => (
+                  <div key={muscle} className="flex items-center justify-between text-sm text-slate-700">
+                    <span>{translateMuscle(muscle)}</span>
+                    <span className="font-medium">
+                      {row.completed} / {row.planned} ({Math.round(row.ratio * 100)}%)
+                    </span>
                   </div>
-                );
-              })}
+                ))}
+              </div>
 
               <div className="flex flex-wrap items-center gap-6 border-t border-slate-200 pt-4 text-sm text-slate-500">
                 <span className="inline-flex items-center gap-2">
-                  <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
-                  Низкая
+                  <span className="h-2.5 w-2.5 rounded-full bg-amber-500" />
+                  &lt; 70% цели (недобор)
                 </span>
                 <span className="inline-flex items-center gap-2">
-                  <span className="h-2.5 w-2.5 rounded-full bg-amber-500" />
-                  Средняя
+                  <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
+                  70–110% (целевая зона)
+                </span>
+                <span className="inline-flex items-center gap-2">
+                  <span className="h-2.5 w-2.5 rounded-full bg-orange-500" />
+                  110–130% (выше цели)
                 </span>
                 <span className="inline-flex items-center gap-2">
                   <span className="h-2.5 w-2.5 rounded-full bg-red-500" />
-                  Высокая
+                  &gt; 130% (перегруз)
                 </span>
               </div>
             </CardContent>

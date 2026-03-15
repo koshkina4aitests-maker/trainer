@@ -52,6 +52,7 @@ class AccountProfile(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     account_id: Mapped[int] = mapped_column(ForeignKey("accounts.id", ondelete="CASCADE"), unique=True, nullable=False)
     age: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    sex: Mapped[str] = mapped_column(String(16), nullable=False, default="female")
     training_style: Mapped[str] = mapped_column(String(32), nullable=False, default="split")
     workouts_per_week: Mapped[int] = mapped_column(Integer, nullable=False, default=3)
     goal: Mapped[str] = mapped_column(String(64), nullable=False, default="hypertrophy")
