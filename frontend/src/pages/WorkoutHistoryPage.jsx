@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
-import { Trash2 } from "lucide-react";
+import { Info, Trash2 } from "lucide-react";
 
 function formatDate(value) {
   return new Intl.DateTimeFormat("ru-RU", {
@@ -14,6 +14,11 @@ function formatDate(value) {
 }
 
 export default function WorkoutHistoryPage({ savedWorkouts, onDeleteWorkout }) {
+  const totalLoadHint =
+    "Общая нагрузка тренировки = сумма нагрузок всех подходов.\nНагрузка подхода = вес × повторы × 0.8.";
+  const exerciseLoadHint =
+    "Нагрузка упражнения = сумма нагрузок его подходов.\nНагрузка подхода = вес × повторы × 0.8.";
+
   return (
     <div className="mx-auto w-full max-w-7xl space-y-4 px-3 py-4 md:px-6 md:py-6">
       <Card className="rounded-2xl border-slate-200 bg-white shadow-sm">
@@ -47,7 +52,10 @@ export default function WorkoutHistoryPage({ savedWorkouts, onDeleteWorkout }) {
                 <div className="flex items-center gap-2">
                   <Badge variant="outline">Длительность: {workout.durationMinutes} мин</Badge>
                   <Badge variant="outline">Упражнений: {workout.exercises.length}</Badge>
-                  <Badge variant="outline">Нагрузка: {workout.totalLoad}</Badge>
+                  <Badge variant="outline" className="inline-flex items-center gap-1" title={totalLoadHint}>
+                    Нагрузка: {workout.totalLoad}
+                    <Info className="h-3.5 w-3.5 text-slate-500" />
+                  </Badge>
                   <Button
                     variant="outline"
                     size="sm"
@@ -68,9 +76,22 @@ export default function WorkoutHistoryPage({ savedWorkouts, onDeleteWorkout }) {
                   {workout.exercises.map((exercise) => (
                     <div key={exercise.exerciseId} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
                       <p className="font-medium text-slate-800">{exercise.name}</p>
-                      <p className="text-sm text-slate-600">
+                      <p className="text-sm text-slate-600 inline-flex items-center gap-1">
                         Подходов: {exercise.setsCount} · Выполнено: {exercise.completedSets} · Нагрузка: {exercise.load}
+                        <span title={exerciseLoadHint}>
+                          <Info className="h-3.5 w-3.5 text-slate-500" />
+                        </span>
                       </p>
+                      {Array.isArray(exercise.sets) && exercise.sets.length > 0 && (
+                        <ul className="mt-2 space-y-1 text-xs text-slate-600">
+                          {exercise.sets.map((setItem, index) => (
+                            <li key={`${exercise.exerciseId}-set-${index}`}>
+                              Подход {index + 1}: {setItem.weight} кг × {setItem.reps} повт · RIR {setItem.rir}
+                              {setItem.completed ? " · выполнен" : ""}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
                     </div>
                   ))}
                 </div>

@@ -85,6 +85,7 @@ function ExerciseCard({
     .map(([muscleId]) => translateMuscle(muscleId));
   const techniqueTip = resolveTechniqueTip(exercise.kind);
   const completedCount = exercise.sets.filter((setItem) => setItem.completed).length;
+  const setLoadHint = "Нагрузка подхода = вес × повторы × 0.8";
 
   return (
     <Card className="rounded-2xl shadow-sm">
@@ -130,7 +131,12 @@ function ExerciseCard({
               <TableHead>Вес (кг)</TableHead>
               <TableHead>Повторы</TableHead>
               <TableHead>RIR</TableHead>
-              <TableHead className="text-right">Нагрузка</TableHead>
+              <TableHead className="text-right">
+                <span className="inline-flex items-center justify-end gap-1" title={setLoadHint}>
+                  Нагрузка
+                  <Info className="h-3.5 w-3.5 text-slate-500" />
+                </span>
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -232,6 +238,8 @@ export default function WorkoutDiaryPage({ authToken, onSaveWorkout, savedWorkou
   const [saveMessage, setSaveMessage] = useState("");
   const [saveError, setSaveError] = useState("");
   const [suggestMessage, setSuggestMessage] = useState("");
+  const muscleLoadHint =
+    "Нагрузка мышцы = сумма по всем подходам: (вес × повторы × 0.8 × коэффициент мышцы в упражнении).";
 
   useEffect(() => {
     let active = true;
@@ -534,7 +542,7 @@ export default function WorkoutDiaryPage({ authToken, onSaveWorkout, savedWorkou
                 <Plus className="h-4 w-4" />
                 Добавить упражнение
               </Button>
-              <Button className="h-10" onClick={handleSaveWorkout}>
+              <Button className="h-10 inline-flex items-center gap-1" onClick={handleSaveWorkout} title="В историю сохраняются все подходы, веса и RIR">
                 Сохранить тренировку
               </Button>
               <select
@@ -620,7 +628,12 @@ export default function WorkoutDiaryPage({ authToken, onSaveWorkout, savedWorkou
 
           <Card className="h-fit rounded-2xl">
             <CardHeader className="pb-3">
-              <CardTitle className="text-2xl text-slate-900">Нагрузка на мышечные группы</CardTitle>
+              <CardTitle className="text-2xl text-slate-900">
+                <span className="inline-flex items-center gap-2" title={muscleLoadHint}>
+                  Нагрузка на мышечные группы
+                  <Info className="h-4 w-4 text-slate-500" />
+                </span>
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {muscleLoads.length === 0 && (
