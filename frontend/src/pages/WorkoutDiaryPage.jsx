@@ -90,9 +90,9 @@ function ExerciseCard({
   return (
     <Card className="rounded-2xl shadow-sm">
       <CardHeader className="pb-2">
-        <div className="flex items-start justify-between gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="space-y-2">
-            <CardTitle className="text-[34px] leading-none tracking-tight md:text-2xl">
+            <CardTitle className="text-xl leading-tight tracking-tight sm:text-2xl">
               <span className="inline-flex cursor-help items-center gap-2" title={techniqueTip}>
                 {resolveExerciseName(exercise.kind)}
                 <Info className="h-4 w-4 text-slate-400" />
@@ -107,7 +107,7 @@ function ExerciseCard({
               </Badge>
             </div>
           </div>
-          <div className="flex items-center gap-2 pt-1">
+          <div className="flex items-center gap-2 pt-1 sm:self-start">
             <span className="text-sm font-semibold text-slate-600">
               {completedCount}/{exercise.targetSets}
             </span>
@@ -322,7 +322,7 @@ function HumanMuscleFigure({ sex = "female", view = "front", muscleProgress = {}
   const shapes = MUSCLE_LAYOUTS[safeSex][view];
 
   return (
-    <svg viewBox="0 0 260 480" className="h-[480px] w-full rounded-xl border border-slate-200 bg-slate-50">
+    <svg viewBox="0 0 260 480" className="mx-auto h-auto w-full max-w-[260px] rounded-xl border border-slate-200 bg-slate-50">
       <FigureBackground sex={safeSex} />
       {Object.entries(shapes).map(([muscleId, ellipses]) => {
         const progress = muscleProgress[muscleId] || { planned: 0, completed: 0, ratio: 0 };
@@ -619,7 +619,7 @@ export default function WorkoutDiaryPage({ authToken, onSaveWorkout, savedWorkou
   return (
     <div className="min-h-screen bg-slate-100 p-3 md:p-6">
       <div className="mx-auto max-w-7xl space-y-4">
-        <header className="flex items-start justify-between rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+        <header className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm sm:px-5 md:flex-row md:items-start md:justify-between">
           <div className="flex items-start gap-3">
             <div className="rounded-xl bg-blue-100 p-2 text-blue-600">
               <Dumbbell className="h-5 w-5" />
@@ -629,7 +629,7 @@ export default function WorkoutDiaryPage({ authToken, onSaveWorkout, savedWorkou
               <p className="text-sm text-slate-500">Отслеживайте прогресс и нагрузку</p>
             </div>
           </div>
-          <div className="flex items-center gap-2 pt-1 text-sm font-medium text-slate-600">
+          <div className="flex items-center gap-2 text-sm font-medium text-slate-600">
             <CalendarDays className="h-4 w-4" />
             {new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "long", year: "numeric" }).format(new Date())}
           </div>
@@ -675,12 +675,12 @@ export default function WorkoutDiaryPage({ authToken, onSaveWorkout, savedWorkou
                 value={workoutTitle}
                 onChange={(event) => setWorkoutTitle(event.target.value)}
                 placeholder="Название тренировки"
-                className="h-10 min-w-[220px]"
+                className="h-10 w-full md:w-auto md:min-w-[220px]"
               />
               <select
                 value={exerciseToAdd}
                 onChange={(event) => setExerciseToAdd(event.target.value)}
-                className="h-10 min-w-[240px] rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-sm outline-none focus:ring-2 focus:ring-blue-500"
+                className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-sm outline-none focus:ring-2 focus:ring-blue-500 md:w-auto md:min-w-[240px]"
               >
                 {exerciseOptions.map((item) => (
                   <option value={item.id} key={item.id}>
@@ -689,23 +689,27 @@ export default function WorkoutDiaryPage({ authToken, onSaveWorkout, savedWorkou
                 ))}
               </select>
 
-              <Button className="h-10" onClick={addExercise}>
+              <Button className="h-10 w-full md:w-auto" onClick={addExercise}>
                 <Plus className="h-4 w-4" />
                 Добавить упражнение
               </Button>
-              <Button className="h-10 inline-flex items-center gap-1" onClick={handleSaveWorkout} title="В историю сохраняются все подходы, веса и RIR">
+              <Button
+                className="h-10 w-full md:w-auto inline-flex items-center gap-1"
+                onClick={handleSaveWorkout}
+                title="В историю сохраняются все подходы, веса и RIR"
+              >
                 Сохранить тренировку
               </Button>
               <select
                 value={suggestedType}
                 onChange={(event) => setSuggestedType(event.target.value)}
-                className="h-10 min-w-[180px] rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-sm outline-none focus:ring-2 focus:ring-blue-500"
+                className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-sm outline-none focus:ring-2 focus:ring-blue-500 md:w-auto md:min-w-[180px]"
               >
                 <option value="split_upper">split верх</option>
                 <option value="split_lower">split низ</option>
                 <option value="fullbody">fullbody</option>
               </select>
-              <Button variant="outline" className="h-10" onClick={applySuggestedWorkout}>
+              <Button variant="outline" className="h-10 w-full md:w-auto" onClick={applySuggestedWorkout}>
                 Предложить следующую
               </Button>
             </div>
@@ -760,7 +764,7 @@ export default function WorkoutDiaryPage({ authToken, onSaveWorkout, savedWorkou
           </Card>
         )}
 
-        <section className="grid gap-4 lg:grid-cols-[1.85fr_1fr]">
+        <section className="grid gap-4 xl:grid-cols-[1.85fr_1fr]">
           <div className="space-y-4">
             {exercises.map((exercise) => (
               <ExerciseCard
@@ -790,7 +794,7 @@ export default function WorkoutDiaryPage({ authToken, onSaveWorkout, savedWorkou
               {muscleProgressRows.length === 0 && (
                 <p className="text-sm text-slate-500">Пока нет нагрузки: добавьте упражнения и подходы.</p>
               )}
-              <div className="grid gap-3 xl:grid-cols-2">
+              <div className="grid gap-3 2xl:grid-cols-2">
                 <div className="space-y-2">
                   <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Вид спереди</p>
                   <HumanMuscleFigure sex={userSex} view="front" muscleProgress={muscleProgress} />
@@ -812,7 +816,7 @@ export default function WorkoutDiaryPage({ authToken, onSaveWorkout, savedWorkou
                 ))}
               </div>
 
-              <div className="flex flex-wrap items-center gap-6 border-t border-slate-200 pt-4 text-sm text-slate-500">
+              <div className="flex flex-wrap items-center gap-3 border-t border-slate-200 pt-4 text-xs text-slate-500 sm:gap-6 sm:text-sm">
                 <span className="inline-flex items-center gap-2">
                   <span className="h-2.5 w-2.5 rounded-full bg-amber-500" />
                   &lt; 70% цели (недобор)

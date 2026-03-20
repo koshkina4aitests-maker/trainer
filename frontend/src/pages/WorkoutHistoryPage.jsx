@@ -23,7 +23,7 @@ export default function WorkoutHistoryPage({ savedWorkouts, onDeleteWorkout }) {
     <div className="mx-auto w-full max-w-7xl space-y-4 px-3 py-4 md:px-6 md:py-6">
       <Card className="rounded-2xl border-slate-200 bg-white shadow-sm">
         <CardHeader className="pb-2">
-          <CardTitle className="text-2xl text-slate-900">История сохранённых тренировок</CardTitle>
+          <CardTitle className="text-xl text-slate-900 sm:text-2xl">История сохранённых тренировок</CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-slate-600">
@@ -44,12 +44,12 @@ export default function WorkoutHistoryPage({ savedWorkouts, onDeleteWorkout }) {
         {savedWorkouts.map((workout) => (
           <Card key={workout.id} className="rounded-2xl border-slate-200 bg-white shadow-sm">
             <CardHeader className="pb-3">
-              <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
                 <div>
                   <CardTitle className="text-xl text-slate-900">{workout.title}</CardTitle>
                   <p className="mt-1 text-sm text-slate-500">{formatDate(workout.savedAt)}</p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <Badge variant="outline">Длительность: {workout.durationMinutes} мин</Badge>
                   <Badge variant="outline">Упражнений: {workout.exercises.length}</Badge>
                   <Badge variant="outline" className="inline-flex items-center gap-1" title={totalLoadHint}>
@@ -59,7 +59,7 @@ export default function WorkoutHistoryPage({ savedWorkouts, onDeleteWorkout }) {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="text-red-600 hover:bg-red-50 hover:text-red-700"
+                    className="w-full text-red-600 hover:bg-red-50 hover:text-red-700 sm:w-auto"
                     onClick={() => onDeleteWorkout?.(workout.id)}
                   >
                     <Trash2 className="h-4 w-4" />

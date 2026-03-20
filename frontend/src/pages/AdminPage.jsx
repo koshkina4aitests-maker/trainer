@@ -137,7 +137,7 @@ export default function AdminPage({ authToken }) {
     <div className="mx-auto w-full max-w-7xl space-y-4 px-3 py-4 md:px-6 md:py-6">
       <Card className="rounded-2xl border-slate-200 bg-white shadow-sm">
         <CardHeader className="pb-2">
-          <CardTitle className="inline-flex items-center gap-2 text-2xl text-slate-900">
+          <CardTitle className="inline-flex flex-wrap items-center gap-2 text-xl text-slate-900 sm:text-2xl">
             <ShieldCheck className="h-6 w-6 text-blue-600" />
             Админка упражнений
           </CardTitle>
@@ -210,7 +210,7 @@ export default function AdminPage({ authToken }) {
               Формат CSV: <code>id,name,muscles,technique_tip</code>. Поле <code>muscles</code> — JSON или строка вида
               <code> chest:1.0;triceps:0.5</code>.
             </p>
-            <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+            <label className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 sm:w-auto">
               <Upload className="h-4 w-4" />
               Загрузить CSV
               <input type="file" accept=".csv,text/csv" className="hidden" onChange={onCsvFileSelected} />
@@ -240,7 +240,7 @@ export default function AdminPage({ authToken }) {
               minLength={4}
               required
             />
-            <Button type="submit">Обновить пароль</Button>
+            <Button type="submit" className="w-full md:w-auto">Обновить пароль</Button>
           </form>
         </CardContent>
       </Card>

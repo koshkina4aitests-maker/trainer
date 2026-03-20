@@ -149,12 +149,12 @@ export default function UserProfilePage({ authToken }) {
     <div className="mx-auto w-full max-w-7xl space-y-4 px-3 py-4 md:px-6 md:py-6">
       <Card className="rounded-2xl border-slate-200 bg-white shadow-sm">
         <CardHeader className="pb-2">
-          <CardTitle className="text-2xl text-slate-900">Личный кабинет</CardTitle>
+          <CardTitle className="text-xl text-slate-900 sm:text-2xl">Личный кабинет</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <p className="text-sm text-slate-600">Профиль пользователя и персональные настройки тренировок.</p>
           <div className="flex flex-wrap gap-2">
-            <Badge variant="outline" className="text-slate-700">Email: {form.email || "—"}</Badge>
+            <Badge variant="outline" className="max-w-full break-all text-slate-700">Email: {form.email || "—"}</Badge>
             <Badge variant="outline" className="text-slate-700">Заполненность: {form.profile_completion_pct}%</Badge>
             <Badge variant="outline" className="text-slate-700">Дней в приложении: {form.days_in_app}</Badge>
           </div>
