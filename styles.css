@@ -1,0 +1,309 @@
+:root {
+  color-scheme: dark;
+  --bg: #0d1118;
+  --panel: #131a24;
+  --panel-border: #243142;
+  --text-main: #e8edf5;
+  --text-muted: #93a0b2;
+  --neutral-muscle: #727d89;
+  --neutral-body: #7a8490;
+  --accent: #5eb8ea;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: "Inter", "SF Pro Text", "Segoe UI", system-ui, -apple-system, sans-serif;
+  background:
+    radial-gradient(1200px 700px at 10% 5%, #162132 0%, transparent 52%),
+    radial-gradient(900px 600px at 90% 0%, #1b2a3f 0%, transparent 46%),
+    var(--bg);
+  color: var(--text-main);
+}
+
+.app-shell {
+  width: min(1200px, 100% - 2rem);
+  margin: 1.25rem auto 2rem;
+  padding: 1.2rem;
+  border-radius: 26px;
+  border: 1px solid #2a3648;
+  background: linear-gradient(160deg, #0f1722 0%, #0d141f 100%);
+  box-shadow:
+    0 24px 56px rgba(3, 8, 16, 0.55),
+    inset 0 1px 0 rgba(182, 207, 236, 0.12);
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 1rem;
+  margin-bottom: 1.1rem;
+}
+
+.eyebrow {
+  margin: 0 0 0.3rem;
+  color: var(--text-muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(1.18rem, 2.8vw, 1.6rem);
+  letter-spacing: 0.01em;
+}
+
+.view-switch {
+  display: inline-flex;
+  padding: 0.25rem;
+  border-radius: 999px;
+  border: 1px solid #324257;
+  background: #182231;
+}
+
+.view-btn {
+  border: 0;
+  background: transparent;
+  color: #a7b3c5;
+  font-size: 0.9rem;
+  padding: 0.46rem 0.95rem;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background-color 220ms ease, color 220ms ease;
+  touch-action: manipulation;
+}
+
+.view-btn.is-active {
+  color: #f4f8ff;
+  background: linear-gradient(130deg, #4a688d 0%, #2f425b 100%);
+}
+
+.stage-grid {
+  display: grid;
+  grid-template-columns: minmax(360px, 1.2fr) minmax(320px, 0.95fr);
+  gap: 1rem;
+}
+
+.body-panel,
+.control-panel {
+  border-radius: 20px;
+  border: 1px solid var(--panel-border);
+  background: linear-gradient(162deg, #111a27 0%, #0f1724 100%);
+  box-shadow: inset 0 1px 0 rgba(194, 214, 238, 0.08);
+}
+
+.body-panel {
+  padding: 0.9rem;
+}
+
+.body-stage {
+  position: relative;
+  min-height: 710px;
+  border-radius: 16px;
+  border: 1px solid #263548;
+  background:
+    radial-gradient(680px 370px at 50% 5%, rgba(118, 141, 171, 0.16), transparent 63%),
+    linear-gradient(180deg, #111b2a 0%, #0f1724 100%);
+  overflow: hidden;
+}
+
+.body-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  transform: translateY(10px);
+  pointer-events: none;
+  transition: opacity 280ms ease, transform 280ms ease;
+}
+
+.body-svg.is-active {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.body-surface {
+  fill: var(--neutral-body);
+  opacity: 0.94;
+  stroke: #8d97a6;
+  stroke-opacity: 0.22;
+  stroke-width: 1.2;
+}
+
+.muscle {
+  fill: var(--neutral-muscle);
+  fill-opacity: 0.46;
+  stroke: rgba(222, 235, 250, 0.18);
+  stroke-width: 0.9;
+  cursor: pointer;
+  transition:
+    fill 460ms cubic-bezier(0.2, 0.65, 0.2, 1),
+    fill-opacity 460ms cubic-bezier(0.2, 0.65, 0.2, 1),
+    stroke 280ms ease,
+    transform 240ms ease;
+  transform-origin: center;
+  touch-action: manipulation;
+}
+
+.muscle:hover {
+  stroke: rgba(240, 247, 255, 0.58);
+}
+
+.muscle.is-selected {
+  stroke: rgba(250, 252, 255, 0.92);
+  stroke-width: 1.25;
+}
+
+.control-panel {
+  padding: 0.9rem;
+  display: grid;
+  gap: 0.8rem;
+  align-content: start;
+}
+
+.muscle-focus,
+.load-panel {
+  border-radius: 14px;
+  border: 1px solid #2a3a4f;
+  background: linear-gradient(165deg, #121d2c 0%, #101926 100%);
+  padding: 0.9rem;
+}
+
+.meta-label {
+  margin: 0 0 0.35rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.68rem;
+}
+
+.muscle-focus h2 {
+  margin: 0;
+  font-size: 1.08rem;
+}
+
+.muscle-focus p {
+  margin: 0.4rem 0 0;
+  color: #bac7d9;
+}
+
+.panel-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.6rem;
+  align-items: baseline;
+  margin-bottom: 0.55rem;
+}
+
+.panel-head h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.legend {
+  color: #95a8bf;
+  font-size: 0.74rem;
+}
+
+.legend-bar {
+  height: 10px;
+  border-radius: 999px;
+  margin-bottom: 0.8rem;
+  border: 1px solid #3d4f66;
+  background: linear-gradient(90deg, #5f6d7d 0%, #62c7f8 45%, #ffa75e 74%, #ff5a5a 100%);
+}
+
+.load-control {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 0.45rem 0.7rem;
+  margin-bottom: 0.6rem;
+}
+
+.load-control span {
+  color: #d5ddec;
+  font-size: 0.92rem;
+}
+
+.load-control output {
+  color: #c0d0e5;
+  min-width: 3rem;
+  text-align: right;
+  font-size: 0.88rem;
+}
+
+.load-control input[type="range"] {
+  grid-column: 1 / -1;
+  appearance: none;
+  width: 100%;
+  height: 7px;
+  border-radius: 999px;
+  border: 1px solid #405269;
+  background: linear-gradient(90deg, #23344a 0%, #2c3f56 100%);
+  outline: none;
+}
+
+.load-control input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1px solid #e4efff;
+  background: radial-gradient(circle at 35% 35%, #f6fbff 0%, #8db5db 70%);
+  box-shadow: 0 4px 12px rgba(16, 24, 36, 0.56);
+}
+
+.load-control input[type="range"]::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1px solid #e4efff;
+  background: radial-gradient(circle at 35% 35%, #f6fbff 0%, #8db5db 70%);
+  box-shadow: 0 4px 12px rgba(16, 24, 36, 0.56);
+}
+
+@media (max-width: 980px) {
+  .stage-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .body-stage {
+    min-height: 640px;
+  }
+}
+
+@media (max-width: 600px) {
+  .app-shell {
+    width: min(100% - 0.9rem, 1200px);
+    margin-top: 0.5rem;
+    padding: 0.75rem;
+    border-radius: 18px;
+  }
+
+  .topbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .view-switch {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .view-btn {
+    flex: 1;
+  }
+
+  .body-stage {
+    min-height: 560px;
+  }
+}

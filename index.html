@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Muscle Load Studio</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Muscle analytics</p>
+          <h1>Реалистичная карта мышечной нагрузки</h1>
+        </div>
+        <div class="view-switch" role="tablist" aria-label="Переключение вида тела">
+          <button class="view-btn is-active" data-view="front" role="tab" aria-selected="true">
+            Спереди
+          </button>
+          <button class="view-btn" data-view="back" role="tab" aria-selected="false">Сзади</button>
+        </div>
+      </header>
+
+      <section class="stage-grid">
+        <article class="body-panel">
+          <div class="body-stage">
+            <svg
+              class="body-svg is-active"
+              id="body-front"
+              viewBox="0 0 360 780"
+              aria-label="Тело человека спереди"
+            >
+              <defs>
+                <linearGradient id="skinFront" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stop-color="#818892" />
+                  <stop offset="52%" stop-color="#747d88" />
+                  <stop offset="100%" stop-color="#636c77" />
+                </linearGradient>
+                <filter id="musclePolishFront" x="-30%" y="-30%" width="160%" height="160%">
+                  <feDropShadow dx="0" dy="1.2" stdDeviation="1.4" flood-color="#0f1722" flood-opacity="0.38" />
+                </filter>
+              </defs>
+
+              <path
+                class="body-surface"
+                d="M180 55 C159 55 141 72 141 95 C141 116 155 134 175 137 L175 167 C151 171 124 183 106 203 C89 223 79 254 80 283 C81 319 95 353 118 377 C130 390 138 406 140 423 C142 444 135 468 129 498 C121 537 121 575 130 613 C137 646 152 677 169 704 C175 714 185 714 191 704 C208 677 223 646 230 613 C239 575 239 537 231 498 C225 468 218 444 220 423 C222 406 230 390 242 377 C265 353 279 319 280 283 C281 254 271 223 254 203 C236 183 209 171 185 167 L185 137 C205 134 219 116 219 95 C219 72 201 55 180 55 Z"
+              />
+
+              <g class="muscles" filter="url(#musclePolishFront)">
+                <path class="muscle" id="front-deltoid-l" data-name="Передняя дельта (левая)" data-group="shoulders" d="M94 210 C78 220 68 237 67 257 C71 278 86 287 103 286 C117 279 123 264 121 245 C115 228 107 216 94 210 Z" />
+                <path class="muscle" id="front-deltoid-r" data-name="Передняя дельта (правая)" data-group="shoulders" d="M266 210 C282 220 292 237 293 257 C289 278 274 287 257 286 C243 279 237 264 239 245 C245 228 253 216 266 210 Z" />
+
+                <path class="muscle" id="front-pec-l" data-name="Грудная мышца (левая)" data-group="chest" d="M128 196 C113 208 104 225 103 248 C105 269 122 280 144 282 C163 281 178 267 182 246 C176 225 164 206 146 195 Z" />
+                <path class="muscle" id="front-pec-r" data-name="Грудная мышца (правая)" data-group="chest" d="M232 196 C247 208 256 225 257 248 C255 269 238 280 216 282 C197 281 182 267 178 246 C184 225 196 206 214 195 Z" />
+
+                <path class="muscle" id="front-biceps-l" data-name="Бицепс (левый)" data-group="arms" d="M82 287 C70 309 66 340 69 372 C75 392 89 402 105 397 C117 379 118 350 111 319 C105 303 95 292 82 287 Z" />
+                <path class="muscle" id="front-biceps-r" data-name="Бицепс (правый)" data-group="arms" d="M278 287 C290 309 294 340 291 372 C285 392 271 402 255 397 C243 379 242 350 249 319 C255 303 265 292 278 287 Z" />
+                <path class="muscle" id="front-forearm-l" data-name="Предплечье (левое)" data-group="arms" d="M78 398 C69 417 63 446 67 478 C74 498 89 506 105 499 C113 480 115 452 110 425 C105 411 93 401 78 398 Z" />
+                <path class="muscle" id="front-forearm-r" data-name="Предплечье (правое)" data-group="arms" d="M282 398 C291 417 297 446 293 478 C286 498 271 506 255 499 C247 480 245 452 250 425 C255 411 267 401 282 398 Z" />
+
+                <path class="muscle" id="front-abs-top-l" data-name="Верхний пресс (левый)" data-group="core" d="M151 287 C142 296 139 311 142 327 C149 338 160 343 171 340 C178 330 180 314 176 298 C169 289 160 285 151 287 Z" />
+                <path class="muscle" id="front-abs-top-r" data-name="Верхний пресс (правый)" data-group="core" d="M209 287 C218 296 221 311 218 327 C211 338 200 343 189 340 C182 330 180 314 184 298 C191 289 200 285 209 287 Z" />
+                <path class="muscle" id="front-abs-mid-l" data-name="Средний пресс (левый)" data-group="core" d="M151 343 C142 352 139 367 142 384 C149 395 160 401 171 398 C178 388 180 371 176 355 C169 346 160 341 151 343 Z" />
+                <path class="muscle" id="front-abs-mid-r" data-name="Средний пресс (правый)" data-group="core" d="M209 343 C218 352 221 367 218 384 C211 395 200 401 189 398 C182 388 180 371 184 355 C191 346 200 341 209 343 Z" />
+                <path class="muscle" id="front-abs-low-l" data-name="Нижний пресс (левый)" data-group="core" d="M152 399 C144 407 141 423 144 439 C151 450 160 456 170 454 C176 445 178 429 174 413 C169 404 161 399 152 399 Z" />
+                <path class="muscle" id="front-abs-low-r" data-name="Нижний пресс (правый)" data-group="core" d="M208 399 C216 407 219 423 216 439 C209 450 200 456 190 454 C184 445 182 429 186 413 C191 404 199 399 208 399 Z" />
+                <path class="muscle" id="front-oblique-l" data-name="Косые мышцы живота (левые)" data-group="core" d="M131 303 C117 314 110 334 112 357 C119 372 133 381 149 379 C154 362 153 341 146 322 C141 312 136 306 131 303 Z" />
+                <path class="muscle" id="front-oblique-r" data-name="Косые мышцы живота (правые)" data-group="core" d="M229 303 C243 314 250 334 248 357 C241 372 227 381 211 379 C206 362 207 341 214 322 C219 312 224 306 229 303 Z" />
+
+                <path class="muscle" id="front-quad-outer-l" data-name="Квадрицепс (левый наружный)" data-group="legs" d="M142 390 C125 412 119 447 124 493 C133 529 152 548 175 543 C186 515 186 472 177 428 C170 410 158 397 142 390 Z" />
+                <path class="muscle" id="front-quad-inner-l" data-name="Квадрицепс (левый внутренний)" data-group="legs" d="M176 392 C166 417 163 451 168 493 C176 525 190 542 206 539 C213 513 213 474 208 433 C203 414 191 398 176 392 Z" />
+                <path class="muscle" id="front-quad-outer-r" data-name="Квадрицепс (правый наружный)" data-group="legs" d="M218 390 C235 412 241 447 236 493 C227 529 208 548 185 543 C174 515 174 472 183 428 C190 410 202 397 218 390 Z" />
+                <path class="muscle" id="front-quad-inner-r" data-name="Квадрицепс (правый внутренний)" data-group="legs" d="M184 392 C194 417 197 451 192 493 C184 525 170 542 154 539 C147 513 147 474 152 433 C157 414 169 398 184 392 Z" />
+
+                <path class="muscle" id="front-tibialis-l" data-name="Передняя большеберцовая (левая)" data-group="calves" d="M161 547 C149 566 145 592 149 623 C156 645 170 656 184 652 C190 632 191 604 186 576 C181 561 172 550 161 547 Z" />
+                <path class="muscle" id="front-tibialis-r" data-name="Передняя большеберцовая (правая)" data-group="calves" d="M199 547 C211 566 215 592 211 623 C204 645 190 656 176 652 C170 632 169 604 174 576 C179 561 188 550 199 547 Z" />
+              </g>
+            </svg>
+
+            <svg
+              class="body-svg"
+              id="body-back"
+              viewBox="0 0 360 780"
+              aria-label="Тело человека сзади"
+            >
+              <defs>
+                <linearGradient id="skinBack" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stop-color="#808892" />
+                  <stop offset="50%" stop-color="#727c86" />
+                  <stop offset="100%" stop-color="#606975" />
+                </linearGradient>
+                <filter id="musclePolishBack" x="-30%" y="-30%" width="160%" height="160%">
+                  <feDropShadow dx="0" dy="1.2" stdDeviation="1.4" flood-color="#0f1722" flood-opacity="0.38" />
+                </filter>
+              </defs>
+
+              <path
+                class="body-surface"
+                d="M180 55 C160 55 143 71 143 93 C143 115 157 132 176 136 L176 166 C149 171 121 182 102 201 C84 220 73 250 74 282 C75 319 89 353 114 380 C127 395 136 412 138 431 C141 453 134 478 128 509 C121 547 121 586 130 623 C138 654 152 682 169 707 C175 717 185 717 191 707 C208 682 222 654 230 623 C239 586 239 547 232 509 C226 478 219 453 222 431 C224 412 233 395 246 380 C271 353 285 319 286 282 C287 250 276 220 258 201 C239 182 211 171 184 166 L184 136 C203 132 217 115 217 93 C217 71 200 55 180 55 Z"
+              />
+
+              <g class="muscles" filter="url(#musclePolishBack)">
+                <path class="muscle" id="back-trapezius" data-name="Трапециевидная мышца" data-group="back" d="M180 183 C150 188 128 207 117 233 C122 252 139 263 162 268 C176 269 190 266 204 268 C227 264 244 252 249 233 C238 207 216 188 186 183 Z" />
+                <path class="muscle" id="back-rear-delt-l" data-name="Задняя дельта (левая)" data-group="shoulders" d="M101 226 C84 236 73 254 72 276 C77 294 92 303 110 301 C123 293 131 277 129 257 C122 241 113 231 101 226 Z" />
+                <path class="muscle" id="back-rear-delt-r" data-name="Задняя дельта (правая)" data-group="shoulders" d="M259 226 C276 236 287 254 288 276 C283 294 268 303 250 301 C237 293 229 277 231 257 C238 241 247 231 259 226 Z" />
+
+                <path class="muscle" id="back-triceps-l" data-name="Трицепс (левый)" data-group="arms" d="M88 302 C74 324 68 354 72 389 C79 409 95 420 111 414 C122 395 124 365 117 334 C111 317 101 306 88 302 Z" />
+                <path class="muscle" id="back-triceps-r" data-name="Трицепс (правый)" data-group="arms" d="M272 302 C286 324 292 354 288 389 C281 409 265 420 249 414 C238 395 236 365 243 334 C249 317 259 306 272 302 Z" />
+                <path class="muscle" id="back-forearm-l" data-name="Разгибатели предплечья (левые)" data-group="arms" d="M85 415 C74 435 69 462 73 492 C80 510 95 518 110 512 C118 494 120 469 115 443 C109 428 99 418 85 415 Z" />
+                <path class="muscle" id="back-forearm-r" data-name="Разгибатели предплечья (правые)" data-group="arms" d="M275 415 C286 435 291 462 287 492 C280 510 265 518 250 512 C242 494 240 469 245 443 C251 428 261 418 275 415 Z" />
+
+                <path class="muscle" id="back-lat-l" data-name="Широчайшая мышца (левая)" data-group="back" d="M133 272 C113 288 102 316 104 348 C112 378 132 397 157 401 C168 376 170 344 163 312 C157 293 147 280 133 272 Z" />
+                <path class="muscle" id="back-lat-r" data-name="Широчайшая мышца (правая)" data-group="back" d="M227 272 C247 288 258 316 256 348 C248 378 228 397 203 401 C192 376 190 344 197 312 C203 293 213 280 227 272 Z" />
+                <path class="muscle" id="back-erector-l" data-name="Разгибатель спины (левый)" data-group="back" d="M163 273 C153 292 149 322 151 358 C157 384 170 401 184 404 C193 383 196 352 193 318 C189 296 178 279 163 273 Z" />
+                <path class="muscle" id="back-erector-r" data-name="Разгибатель спины (правый)" data-group="back" d="M197 273 C207 292 211 322 209 358 C203 384 190 401 176 404 C167 383 164 352 167 318 C171 296 182 279 197 273 Z" />
+
+                <path class="muscle" id="back-glute-l" data-name="Ягодичная мышца (левая)" data-group="glutes" d="M150 407 C132 421 124 444 127 472 C136 492 154 503 176 500 C187 482 188 456 181 431 C175 418 164 410 150 407 Z" />
+                <path class="muscle" id="back-glute-r" data-name="Ягодичная мышца (правая)" data-group="glutes" d="M210 407 C228 421 236 444 233 472 C224 492 206 503 184 500 C173 482 172 456 179 431 C185 418 196 410 210 407 Z" />
+
+                <path class="muscle" id="back-ham-l" data-name="Бицепс бедра (левый)" data-group="legs" d="M148 503 C130 526 122 563 128 608 C138 640 159 658 184 652 C195 622 195 579 186 536 C179 517 165 505 148 503 Z" />
+                <path class="muscle" id="back-ham-r" data-name="Бицепс бедра (правый)" data-group="legs" d="M212 503 C230 526 238 563 232 608 C222 640 201 658 176 652 C165 622 165 579 174 536 C181 517 195 505 212 503 Z" />
+
+                <path class="muscle" id="back-calf-l" data-name="Икроножная (левая)" data-group="calves" d="M160 654 C146 672 141 699 145 730 C154 749 169 758 184 754 C192 735 193 708 188 682 C183 667 173 657 160 654 Z" />
+                <path class="muscle" id="back-calf-r" data-name="Икроножная (правая)" data-group="calves" d="M200 654 C214 672 219 699 215 730 C206 749 191 758 176 754 C168 735 167 708 172 682 C177 667 187 657 200 654 Z" />
+              </g>
+            </svg>
+          </div>
+        </article>
+
+        <aside class="control-panel">
+          <section class="muscle-focus">
+            <p class="meta-label">Выбранная мышца</p>
+            <h2 id="focus-muscle">Нажмите на мышцу</h2>
+            <p id="focus-group">Группа: -</p>
+            <p id="focus-load">Нагрузка: -</p>
+          </section>
+
+          <section class="load-panel">
+            <div class="panel-head">
+              <h3>Уровни нагрузки</h3>
+              <span class="legend">Слабая ← → Сильная</span>
+            </div>
+            <div class="legend-bar" aria-hidden="true"></div>
+
+            <label class="load-control">
+              <span>Грудь</span>
+              <input type="range" min="0" max="100" value="52" data-group-slider="chest" />
+              <output data-group-output="chest">52%</output>
+            </label>
+            <label class="load-control">
+              <span>Плечи</span>
+              <input type="range" min="0" max="100" value="46" data-group-slider="shoulders" />
+              <output data-group-output="shoulders">46%</output>
+            </label>
+            <label class="load-control">
+              <span>Руки</span>
+              <input type="range" min="0" max="100" value="63" data-group-slider="arms" />
+              <output data-group-output="arms">63%</output>
+            </label>
+            <label class="load-control">
+              <span>Пресс и корпус</span>
+              <input type="range" min="0" max="100" value="58" data-group-slider="core" />
+              <output data-group-output="core">58%</output>
+            </label>
+            <label class="load-control">
+              <span>Спина</span>
+              <input type="range" min="0" max="100" value="55" data-group-slider="back" />
+              <output data-group-output="back">55%</output>
+            </label>
+            <label class="load-control">
+              <span>Ягодицы</span>
+              <input type="range" min="0" max="100" value="49" data-group-slider="glutes" />
+              <output data-group-output="glutes">49%</output>
+            </label>
+            <label class="load-control">
+              <span>Ноги</span>
+              <input type="range" min="0" max="100" value="69" data-group-slider="legs" />
+              <output data-group-output="legs">69%</output>
+            </label>
+            <label class="load-control">
+              <span>Голени</span>
+              <input type="range" min="0" max="100" value="43" data-group-slider="calves" />
+              <output data-group-output="calves">43%</output>
+            </label>
+          </section>
+        </aside>
+      </section>
+    </main>
+
+    <script src="./app.js" type="module"></script>
+  </body>
+</html>
